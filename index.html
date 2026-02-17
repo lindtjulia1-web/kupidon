@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skomorokha Game Builder</title>
+    <title>Skomorokha Game Builder - List Mode</title>
     <style>
         :root { --primary: #ff9800; --bg-editor: #f8f9fa; --border: #e0e0e0; --correct: #4caf50; --wrong: #f44336; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -30,38 +30,25 @@
         .editor-sidebar h2 { color: var(--primary); margin-top: 0; font-size: 22px; display: flex; align-items: center; gap: 10px; }
         
         .editor-group { margin-bottom: 15px; }
-        .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 12px; text-transform: uppercase; }
+        .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 11px; text-transform: uppercase; }
         .editor-group input, .editor-group textarea { 
             width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; 
             font-family: inherit; font-size: 14px;
         }
 
-        /* Конструктор вопросов */
-        .question-item {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        .question-item h4 { margin: 0 0 10px 0; font-size: 14px; color: var(--primary); }
-        .input-correct { border-left: 5px solid var(--correct) !important; }
-        .input-wrong { border-left: 5px solid var(--wrong) !important; margin-top: 5px; }
-        
-        .remove-q { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #ccc; font-size: 18px; }
-        .remove-q:hover { color: var(--wrong); }
-
-        .add-q-btn {
-            background: #fff; border: 2px dashed var(--primary); color: var(--primary);
-            padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 20px;
-        }
+        /* Стили для многострочных списков */
+        .list-area { font-family: monospace !important; font-size: 12px !important; white-space: pre; overflow-x: auto; }
+        .q-list { border-top: 3px solid var(--primary) !important; }
+        .a-correct { border-top: 3px solid var(--correct) !important; }
+        .a-wrong { border-top: 3px solid var(--wrong) !important; }
 
         .save-btn {
             background: var(--primary); color: white; border: none; padding: 15px;
             font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer;
-            transition: background 0.2s; position: sticky; bottom: 0;
+            transition: background 0.2s; position: sticky; bottom: 0; margin-top: 10px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
         }
+        .save-btn:hover { background: #e68a00; }
 
         /* ПРАВАЯ ЧАСТЬ (ПРЕВЬЮ) */
         .preview-container { position: relative; background: #000; overflow: hidden; }
@@ -100,7 +87,7 @@
 
         <div class="editor-group">
             <label>Описание задачи</label>
-            <textarea id="edit-desc">Я угощаю всех блинами! Помоги мне накормить гостей и выучи Past Simple!</textarea>
+            <textarea id="edit-desc" rows="2">Я угощаю всех блинами! Помоги мне накормить гостей и выучи Past Simple!</textarea>
         </div>
 
         <div class="editor-group">
@@ -113,13 +100,28 @@
             <input type="number" id="edit-goal" value="3000">
         </div>
 
-        <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 10px 0 20px 0;">
-        <label style="font-weight: bold; font-size: 12px; color: #444;">ВОПРОСЫ И ОТВЕТЫ:</label>
+        <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 5px 0 15px 0;">
         
-        <div id="questions-container">
-            </div>
+        <div class="editor-group">
+            <label>📝 Список вопросов (каждый с новой строки)</label>
+            <textarea id="list-questions" class="list-area q-list" rows="5" placeholder="Вопрос 1&#10;Вопрос 2"></textarea>
+        </div>
 
-        <button class="add-q-btn" onclick="addNewQuestion()">+ ДОБАВИТЬ ВОПРОС</button>
+        <div class="editor-group">
+            <label>✅ Правильные ответы (соответственно строкам)</label>
+            <textarea id="list-correct" class="list-area a-correct" rows="5" placeholder="Верно 1&#10;Верно 2"></textarea>
+        </div>
+
+        <div class="editor-group">
+            <label>❌ Неправильные варианты 1</label>
+            <textarea id="list-wrong1" class="list-area a-wrong" rows="5" placeholder="Ошибка 1а&#10;Ошибка 2а"></textarea>
+        </div>
+
+        <div class="editor-group">
+            <label>❌ Неправильные варианты 2</label>
+            <textarea id="list-wrong2" class="list-area a-wrong" rows="5" placeholder="Ошибка 1б&#10;Ошибка 2б"></textarea>
+        </div>
+
         <button class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
     </aside>
 
@@ -155,58 +157,27 @@
     const gameZone = document.getElementById('game-zone');
 
     let config = {
-        title: "Привет! Я Скоморох! 🤡",
-        desc: "Я угощаю всех блинами! Помоги мне накормить гостей и выучи Past Simple!",
-        bg: 'https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png',
-        goal: 3000,
-        questions: [
-            { q: "Yesterday I ___ (go) to the park.", a: ["went", "goed", "gone"], c: 0 },
-            { q: "She ___ (eat) a big apple.", a: ["ate", "eated", "aten"], c: 0 }
-        ]
+        title: "", desc: "", bg: "", goal: 3000,
+        questions: []
+    };
+
+    // Начальные данные для полей (чтобы не было пусто при запуске)
+    const initialData = {
+        q: "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.\nThey ___ (be) happy.",
+        c: "went\nate\nwere",
+        w1: "goed\neated\nwas",
+        w2: "gone\naten\nbeen"
     };
 
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
     let images = {}, cupid, target, note = { active: false };
 
-    // КОНСТРУКТОР ВОПРОСОВ В РЕДАКТОРЕ
-    function renderQuestionEditor() {
-        const container = document.getElementById('questions-container');
-        container.innerHTML = '';
-        config.questions.forEach((q, index) => {
-            const qDiv = document.createElement('div');
-            qDiv.className = 'question-item';
-            qDiv.innerHTML = `
-                <span class="remove-q" onclick="removeQuestion(${index})">✖</span>
-                <h4>Вопрос ${index + 1}</h4>
-                <div class="editor-group">
-                    <input type="text" placeholder="Текст вопроса..." value="${q.q}" oninput="updateQ(${index}, 'q', this.value)">
-                </div>
-                <div class="editor-group">
-                    <label>Правильный ответ</label>
-                    <input type="text" class="input-correct" value="${q.a[0]}" oninput="updateA(${index}, 0, this.value)">
-                </div>
-                <div class="editor-group">
-                    <label>Неправильные ответы</label>
-                    <input type="text" class="input-wrong" value="${q.a[1]}" oninput="updateA(${index}, 1, this.value)">
-                    <input type="text" class="input-wrong" value="${q.a[2] || ''}" oninput="updateA(${index}, 2, this.value)">
-                </div>
-            `;
-            container.appendChild(qDiv);
-        });
+    function fillInitialLists() {
+        document.getElementById('list-questions').value = initialData.q;
+        document.getElementById('list-correct').value = initialData.c;
+        document.getElementById('list-wrong1').value = initialData.w1;
+        document.getElementById('list-wrong2').value = initialData.w2;
     }
-
-    function addNewQuestion() {
-        config.questions.push({ q: "", a: ["", "", ""], c: 0 });
-        renderQuestionEditor();
-    }
-
-    function removeQuestion(index) {
-        config.questions.splice(index, 1);
-        renderQuestionEditor();
-    }
-
-    function updateQ(idx, field, val) { config.questions[idx][field] = val; }
-    function updateA(idx, aIdx, val) { config.questions[idx].a[aIdx] = val; }
 
     function applyChanges() {
         config.title = document.getElementById('edit-title').value;
@@ -214,12 +185,28 @@
         config.bg = document.getElementById('edit-bg').value;
         config.goal = parseInt(document.getElementById('edit-goal').value);
         
+        // Сборка вопросов из списков
+        const qs = document.getElementById('list-questions').value.split('\n');
+        const cs = document.getElementById('list-correct').value.split('\n');
+        const w1s = document.getElementById('list-wrong1').value.split('\n');
+        const w2s = document.getElementById('list-wrong2').value.split('\n');
+
+        config.questions = [];
+        qs.forEach((qText, i) => {
+            if(qText.trim()) {
+                config.questions.push({
+                    q: qText,
+                    a: [cs[i] || "?", w1s[i] || "?", w2s[i] || "?"],
+                    c: 0
+                });
+            }
+        });
+
         document.getElementById('disp-title').innerText = config.title;
         document.getElementById('disp-desc').innerHTML = config.desc;
         loadImages();
     }
 
-    // ИГРОВАЯ ЛОГИКА
     function loadImages() {
         isLoaded = false;
         let loaded = 0;
@@ -252,13 +239,13 @@
     }
 
     function showQuiz() {
+        if(config.questions.length === 0) { resetGame(); return; }
         gameState = 'QUIZ';
         const qData = config.questions[Math.floor(Math.random() * config.questions.length)];
         document.getElementById('quiz-question').innerText = qData.q;
         const optionsDiv = document.getElementById('quiz-options');
         optionsDiv.innerHTML = '';
         
-        // Перемешиваем ответы для игры
         let answers = qData.a.map((text, i) => ({ text, correct: i === 0 }));
         answers = answers.sort(() => Math.random() - 0.5);
 
@@ -315,14 +302,14 @@
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
-            if(mouseX < 0) return; // Клик в редакторе
+            if(mouseX < 0) return; 
             note = { active: true, x: cupid.x, y: cupid.y + 40, vx: (mouseX - cupid.x) * 0.05, vy: (mouseY - cupid.y) * 0.05 };
         }
     });
 
     window.addEventListener('resize', resize);
-    renderQuestionEditor();
-    applyChanges();
+    fillInitialLists(); // Сначала заполняем текстом
+    applyChanges();      // Потом парсим в игру
     loop();
 </script>
 </body>
