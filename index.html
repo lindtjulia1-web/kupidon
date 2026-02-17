@@ -108,18 +108,13 @@
         </div>
 
         <div class="editor-group">
-            <label>✅ Правильные ответы (соответственно строкам)</label>
+            <label>✅ Правильные ответы (один на строку)</label>
             <textarea id="list-correct" class="list-area a-correct" rows="5" placeholder="Верно 1&#10;Верно 2"></textarea>
         </div>
 
         <div class="editor-group">
-            <label>❌ Неправильные варианты 1</label>
-            <textarea id="list-wrong1" class="list-area a-wrong" rows="5" placeholder="Ошибка 1а&#10;Ошибка 2а"></textarea>
-        </div>
-
-        <div class="editor-group">
-            <label>❌ Неправильные варианты 2</label>
-            <textarea id="list-wrong2" class="list-area a-wrong" rows="5" placeholder="Ошибка 1б&#10;Ошибка 2б"></textarea>
+            <label>❌ Неправильные ответы (через запятую в строке)</label>
+            <textarea id="list-wrong" class="list-area a-wrong" rows="8" placeholder="ошибка1, ошибка2&#10;ошибка3, ошибка4"></textarea>
         </div>
 
         <button class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
@@ -161,12 +156,10 @@
         questions: []
     };
 
-    // Начальные данные для полей (чтобы не было пусто при запуске)
     const initialData = {
         q: "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.\nThey ___ (be) happy.",
         c: "went\nate\nwere",
-        w1: "goed\neated\nwas",
-        w2: "gone\naten\nbeen"
+        w: "goed, gone\neated, aten\nwas, been"
     };
 
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
@@ -175,8 +168,7 @@
     function fillInitialLists() {
         document.getElementById('list-questions').value = initialData.q;
         document.getElementById('list-correct').value = initialData.c;
-        document.getElementById('list-wrong1').value = initialData.w1;
-        document.getElementById('list-wrong2').value = initialData.w2;
+        document.getElementById('list-wrong').value = initialData.w;
     }
 
     function applyChanges() {
@@ -185,18 +177,20 @@
         config.bg = document.getElementById('edit-bg').value;
         config.goal = parseInt(document.getElementById('edit-goal').value);
         
-        // Сборка вопросов из списков
         const qs = document.getElementById('list-questions').value.split('\n');
         const cs = document.getElementById('list-correct').value.split('\n');
-        const w1s = document.getElementById('list-wrong1').value.split('\n');
-        const w2s = document.getElementById('list-wrong2').value.split('\n');
+        const ws = document.getElementById('list-wrong').value.split('\n');
 
         config.questions = [];
         qs.forEach((qText, i) => {
             if(qText.trim()) {
+                // Разбиваем неправильные ответы по запятой и убираем лишние пробелы
+                let wrongChoices = (ws[i] || "").split(',').map(item => item.trim()).filter(item => item !== "");
+                
                 config.questions.push({
                     q: qText,
-                    a: [cs[i] || "?", w1s[i] || "?", w2s[i] || "?"],
+                    // Собираем массив ответов: правильный + все неправильные
+                    a: [cs[i] || "?", ...wrongChoices],
                     c: 0
                 });
             }
@@ -246,6 +240,7 @@
         const optionsDiv = document.getElementById('quiz-options');
         optionsDiv.innerHTML = '';
         
+        // В игре по-прежнему перемешиваем варианты
         let answers = qData.a.map((text, i) => ({ text, correct: i === 0 }));
         answers = answers.sort(() => Math.random() - 0.5);
 
@@ -308,8 +303,8 @@
     });
 
     window.addEventListener('resize', resize);
-    fillInitialLists(); // Сначала заполняем текстом
-    applyChanges();      // Потом парсим в игру
+    fillInitialLists(); 
+    applyChanges();      
     loop();
 </script>
 </body>
