@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skomorokha's Quest</title>
+    <title>Skomorokha Editor</title>
     <style>
         :root { --primary: #ff9800; --secondary: #fff3e0; --gold: #ffeb3b; --green: #4caf50; --red: #f44336; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Comic Sans MS', 'Arial', sans-serif; }
         canvas { display: block; touch-action: none; }
         
-        /* Overlays & Cards */
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); display: flex;
@@ -17,415 +16,275 @@
             color: white; text-align: center; padding: 20px; box-sizing: border-box;
         }
         .card {
-            background: white; color: #333; padding: 30px; border-radius: 30px;
+            background: white; color: #333; padding: 25px; border-radius: 30px;
             max-width: 500px; width: 95%; border: 6px solid var(--primary);
             position: relative; max-height: 90vh; overflow-y: auto;
         }
-        
-        /* Buttons */
         .btn {
-            background: var(--primary); color: white; border: none; padding: 15px 40px;
-            font-size: 24px; font-weight: bold; border-radius: 50px; cursor: pointer;
-            margin-top: 20px; transition: 0.3s; box-shadow: 0 4px 0 #e65100;
+            background: var(--primary); color: white; border: none; padding: 12px 30px;
+            font-size: 20px; font-weight: bold; border-radius: 50px; cursor: pointer;
+            margin-top: 15px; transition: 0.3s; box-shadow: 0 4px 0 #e65100;
         }
-        .btn-small { padding: 10px 20px; font-size: 16px; margin: 5px; }
         
-        /* Quiz */
-        #quiz-overlay { display: none; z-index: 3000; }
-        .options-grid { display: grid; gap: 10px; margin-top: 20px; width: 100%; }
-        .opt-btn { 
-            background: #fff8e1; border: 3px solid var(--secondary); padding: 15px; 
-            border-radius: 15px; cursor: pointer; font-size: 20px; font-weight: bold; 
-            color: #795548; transition: all 0.2s ease;
-        }
-        .correct { background-color: var(--green) !important; color: white !important; border-color: #2e7d32 !important; transform: scale(1.05); }
-        .wrong { background-color: var(--red) !important; color: white !important; border-color: #c62828 !important; }
-        .disabled { pointer-events: none; }
-        
-        /* UI Layer */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; padding: 15px; box-sizing: border-box; color: white; z-index: 1000;}
-        .top-left { position: absolute; top: 20px; left: 20px; }
-        .top-right { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: auto; }
-        
-        #progress-bar { width: 200px; height: 20px; background: rgba(255,255,255,0.2); border-radius: 10px; border: 2px solid #fff; overflow: hidden; margin-top: 5px; }
-        #progress-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s; }
-        .indicator-box { background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; border: 3px solid var(--primary); font-weight: bold; font-size: 18px; text-align: right;}
-        
-        .power-bar-container { width: 140px; height: 12px; background: #444; border-radius: 6px; margin-top: 5px; border: 1px solid #fff; }
-        #power-fill { width: 0%; height: 100%; background: var(--gold); border-radius: 6px; }
-        #combo-msg { position: absolute; font-size: 50px; color: var(--gold); font-weight: bold; text-shadow: 3px 3px 0 #000; pointer-events: none; display: none; z-index: 1500;}
-        
-        /* Editor Styles */
+        /* Editor UI */
         #editor-overlay { display: none; z-index: 4000; }
-        .editor-group { margin-bottom: 15px; text-align: left; }
-        .editor-group label { font-weight: bold; display: block; margin-bottom: 5px; color: #444;}
-        .editor-group select, .editor-group textarea { width: 100%; padding: 10px; border-radius: 10px; border: 2px solid #ccc; box-sizing: border-box; font-family: inherit;}
-        #editor-btn { background: #333; pointer-events: auto; font-size: 14px; padding: 8px 15px; cursor: pointer; border: 2px solid white; border-radius: 15px; color: white; margin-bottom: 10px;}
+        .editor-section { margin-bottom: 20px; text-align: left; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .editor-section h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 18px; }
+        .editor-group { margin-bottom: 10px; }
+        .editor-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #555; }
+        .editor-group input, .editor-group textarea { 
+            width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 8px; 
+            box-sizing: border-box; font-family: sans-serif; 
+        }
+
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; padding: 15px; box-sizing: border-box; color: white; z-index: 1000; }
+        .top-right { position: absolute; top: 20px; right: 20px; pointer-events: auto; }
+        #editor-toggle-btn { background: #333; color: white; border: 2px solid white; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
         
-        /* Lang Switcher */
-        .lang-switch { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); pointer-events: auto; z-index: 2500;}
-        .lang-btn { background: #fff; border: 2px solid var(--primary); padding: 5px 10px; border-radius: 10px; cursor: pointer; font-weight: bold;}
+        .indicator-box { background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; border: 3px solid var(--primary); font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="lang-switch" id="lang-container">
-    <button class="lang-btn" onclick="setLang('en')">EN</button>
-    <button class="lang-btn" onclick="setLang('ru')">RU</button>
-    <button class="lang-btn" onclick="setLang('de')">DE</button>
+<div id="editor-overlay" class="overlay">
+    <div class="card">
+        <h2>⚙️ Редактор Игры</h2>
+        
+        <div class="editor-section">
+            <h3>1. Персонаж и Фон</h3>
+            <div class="editor-group">
+                <label>Ссылка на Скомороха (PNG):</label>
+                <input type="text" id="edit-cupid-url" value="https://i.postimg.cc/66vncXzr/Dizajn-bez-nazvania-9.png">
+            </div>
+            <div class="editor-group">
+                <label>Ссылка на Фон:</label>
+                <input type="text" id="edit-bg-url" value="https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png">
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <h3>2. Тексты (RU)</h3>
+            <div class="editor-group">
+                <label>Заголовок:</label>
+                <input type="text" id="edit-title-ru" value="Привет! Я Скоморох! 🤡">
+            </div>
+            <div class="editor-group">
+                <label>Описание:</label>
+                <textarea id="edit-desc-ru">Я угощаю всех блинами! Помоги мне накормить гостей и выучи Past Simple!</textarea>
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <h3>3. Игровые цели</h3>
+            <div class="editor-group">
+                <label>Очков для победы:</label>
+                <input type="number" id="edit-goal" value="3000">
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <h3>4. Банк Вопросов (JSON)</h3>
+            <textarea id="edit-questions" rows="6" style="font-family: monospace; font-size: 12px;"></textarea>
+        </div>
+
+        <button class="btn" onclick="saveAndApply()">Применить и Закрыть</button>
+    </div>
 </div>
 
 <div id="start-screen" class="overlay">
     <div class="card">
-        <h1 id="ui-title" style="color: var(--primary); font-size: 32px;">Hi! I am Skomorokha! 🤡</h1>
-        <p id="ui-desc" style="font-size: 20px;">I give pancakes to everyone! Help me throw them and learn <b>Past Simple</b>!</p>
-        <button class="btn" id="ui-start-btn" onclick="startGame()">LET'S GO! ☀️</button>
-    </div>
-</div>
-
-<div id="end-screen" class="overlay" style="display: none;">
-    <div class="card">
-        <h1 id="ui-end-title" style="color: var(--primary); font-size: 40px;">GREAT! 🌞</h1>
-        <p id="ui-end-desc" style="font-size: 24px;">You are a Master and you know English verbs!</p>
-        <button class="btn" id="ui-restart-btn" onclick="location.reload()">PLAY AGAIN!</button>
+        <h1 id="display-title">Привет! Я Скоморох! 🤡</h1>
+        <p id="display-desc">Помоги мне бросать блины!</p>
+        <button class="btn" onclick="startGame()">ПОГНАЛИ! ☀️</button>
     </div>
 </div>
 
 <div id="quiz-overlay" class="overlay">
     <div class="card">
-        <h2 id="ui-quiz-title" style="color: var(--primary); font-size: 26px;">Power Up! ✨</h2>
-        <p id="quiz-question" style="font-size: 22px; font-weight: bold; margin: 15px 0; color: #444;"></p>
-        <div class="options-grid" id="options"></div>
-    </div>
-</div>
-
-<div id="editor-overlay" class="overlay">
-    <div class="card">
-        <h2 style="color: var(--primary); margin-top:0;">⚙️ Game Editor</h2>
-        
-        <div class="editor-group">
-            <label>Visual Theme / Projectile:</label>
-            <select id="edit-theme" onchange="applySettings()">
-                <option value="pancake">🥞 Pancakes & Standard Background</option>
-                <option value="pirate">🪙 Pirate Coins & Golden Sand</option>
-            </select>
-        </div>
-
-        <div class="editor-group">
-            <label>Target Goal (Points):</label>
-            <select id="edit-goal" onchange="applySettings()">
-                <option value="1000">1000 (Short)</option>
-                <option value="3000" selected>3000 (Normal)</option>
-                <option value="5000">5000 (Long)</option>
-            </select>
-        </div>
-
-        <div class="editor-group">
-            <label>Grammar Bank (JSON format):</label>
-            <textarea id="edit-grammar" rows="8"></textarea>
-        </div>
-
-        <button class="btn btn-small" onclick="saveEditor()">Save & Close</button>
+        <h2 style="color: var(--primary)">Блинная Сила! ✨</h2>
+        <p id="quiz-question" style="font-size: 20px; font-weight: bold;"></p>
+        <div id="options" class="options-grid" style="display: grid; gap: 10px;"></div>
     </div>
 </div>
 
 <div id="ui-layer">
-    <div class="top-left">
-        <div id="ui-score-title" style="font-weight: bold; text-shadow: 1px 1px 2px #000;">Score (Goal: 3000)</div>
-        <div id="progress-bar"><div id="progress-fill"></div></div>
-    </div>
     <div class="top-right">
-        <button id="editor-btn" onclick="openEditor()">⚙️ Editor</button>
+        <button id="editor-toggle-btn" onclick="toggleEditor()">⚙️ Настроить игру</button>
         <div class="indicator-box" id="wind-ui">Wind: 0</div>
-        <div class="indicator-box"><span id="ui-power">Power</span><div class="power-bar-container"><div id="power-fill"></div></div></div>
     </div>
 </div>
-<div id="combo-msg">WOW!</div>
+
 <canvas id="game-canvas"></canvas>
 
 <script>
-    // --- TRANSLATIONS ---
-    const i18n = {
-        en: {
-            title: "Hi! I am Skomorokha! 🤡",
-            desc: "Help me throw items and learn <b>Past Simple</b>!",
-            start: "LET'S GO! ☀️",
-            endTitle: "GREAT! 🌞",
-            endDesc: "You are a Master and you know English verbs!",
-            restart: "PLAY AGAIN!",
-            quizTitle: "Power Up! ✨",
-            scoreTitle: "Score",
-            power: "Power",
-            wind: "Wind"
-        },
-        ru: {
-            title: "Привет! Я Скоморох! 🤡",
-            desc: "Помоги мне бросать предметы и учить <b>Past Simple</b>!",
-            start: "ПОГНАЛИ! ☀️",
-            endTitle: "ОТЛИЧНО! 🌞",
-            endDesc: "Ты настоящий Мастер и знаешь английские глаголы!",
-            restart: "ИГРАТЬ ЕЩЕ!",
-            quizTitle: "Суперсила! ✨",
-            scoreTitle: "Счет",
-            power: "Сила",
-            wind: "Ветер"
-        },
-        de: {
-            title: "Hallo! Ich bin Skomorokha! 🤡",
-            desc: "Hilf mir, Gegenstände zu werfen und <b>Past Simple</b> zu lernen!",
-            start: "LOS GEHT'S! ☀️",
-            endTitle: "TOLL! 🌞",
-            endDesc: "Du bist ein Meister und kennst die englischen Verben!",
-            restart: "NOCHMAL SPIELEN!",
-            quizTitle: "Aufladen! ✨",
-            scoreTitle: "Punkte",
-            power: "Kraft",
-            wind: "Wind"
-        }
-    };
-
-    let currentLang = 'en';
-
-    function setLang(lang) {
-        currentLang = lang;
-        const t = i18n[lang];
-        document.getElementById('ui-title').innerHTML = t.title;
-        document.getElementById('ui-desc').innerHTML = t.desc;
-        document.getElementById('ui-start-btn').innerText = t.start;
-        document.getElementById('ui-end-title').innerText = t.endTitle;
-        document.getElementById('ui-end-desc').innerText = t.endDesc;
-        document.getElementById('ui-restart-btn').innerText = t.restart;
-        document.getElementById('ui-quiz-title').innerText = t.quizTitle;
-        document.getElementById('ui-score-title').innerText = `${t.scoreTitle} (Goal: ${targetScore})`;
-        document.getElementById('ui-power').innerText = t.power;
-        
-        // Update wind if playing
-        if(gameState === 'PLAY') {
-            document.getElementById('wind-ui').innerText = `${t.wind}: ${wind > 0 ? '→' : '←'} ${(Math.abs(wind)*100).toFixed(0)}`;
-        }
-    }
-
-    // --- GAME DATA & SETTINGS ---
-    let grammarBank = [
-        { q: "Yesterday I ___ (go) to the park.", a: ["went", "goed", "gone"], c: 0 },
-        { q: "She ___ (eat) a big apple.", a: ["eated", "ate", "aten"], c: 1 },
-        { q: "We ___ (see) a funny bird.", a: ["saw", "seed", "seen"], c: 0 },
-        { q: "He ___ (buy) a new toy.", a: ["buyed", "bought", "boughten"], c: 1 }
-    ];
-    
-    let targetScore = 3000;
-    let projectileChar = '🥞';
-    let bgColor = null; // null means use default background image
-
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
-    
-    let questionPool = [...grammarBank]; 
-    let images = {}, isLoaded = false, score = 0, combo = 0, gameState = 'START';
-    let cupid, target, note, particles = [];
-    let mouse = { x: 0, y: 0, down: false };
-    let wind = 0;
 
-    const assets = {
-        bg: 'https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png',
-        cupid: 'https://i.postimg.cc/66vncXzr/Dizajn-bez-nazvania-9.png',
-        people: [
-            'https://i.postimg.cc/VLPMHVVY/10.png', 'https://i.postimg.cc/Hs05G9qT/2.png',
-            'https://i.postimg.cc/jd6NV4pY/3.png', 'https://i.postimg.cc/8PdW8m28/4.png'
+    // Базовые настройки
+    let config = {
+        cupidImg: 'https://i.postimg.cc/66vncXzr/Dizajn-bez-nazvania-9.png',
+        bgImg: 'https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png',
+        goal: 3000,
+        title: "Привет! Я Скоморох! 🤡",
+        desc: "Я угощаю всех блинами! Помоги мне накормить гостей и выучи Past Simple!",
+        questions: [
+            { q: "Yesterday I ___ (go) to the park.", a: ["went", "goed", "gone"], c: 0 },
+            { q: "She ___ (eat) a big apple.", a: ["eated", "ate", "aten"], c: 1 },
+            { q: "We ___ (see) a funny bird.", a: ["saw", "seed", "seen"], c: 0 }
         ]
     };
 
-    // --- EDITOR LOGIC ---
-    function openEditor() {
-        document.getElementById('editor-overlay').style.display = 'flex';
-        document.getElementById('edit-grammar').value = JSON.stringify(grammarBank, null, 2);
+    let images = {}, isLoaded = false, gameState = 'START', score = 0;
+    let cupid, target, note, wind = 0, mouse = { x: 0, y: 0, down: false };
+    let questionPool = [];
+
+    // Функции редактора
+    function toggleEditor() {
+        const ov = document.getElementById('editor-overlay');
+        ov.style.display = (ov.style.display === 'flex') ? 'none' : 'flex';
+        document.getElementById('edit-questions').value = JSON.stringify(config.questions, null, 2);
     }
 
-    function saveEditor() {
-        try {
-            const parsed = JSON.parse(document.getElementById('edit-grammar').value);
-            if(Array.isArray(parsed)) {
-                grammarBank = parsed;
-                questionPool = [...grammarBank];
-            }
-        } catch (e) {
-            alert("Invalid JSON format in Grammar Bank!");
-            return;
-        }
-        applySettings();
-        document.getElementById('editor-overlay').style.display = 'none';
-    }
-
-    function applySettings() {
-        const theme = document.getElementById('edit-theme').value;
-        if(theme === 'pirate') {
-            projectileChar = '🪙';
-            bgColor = '#d4af37'; // Golden Sand Color
-        } else {
-            projectileChar = '🥞';
-            bgColor = null;
-        }
-
-        targetScore = parseInt(document.getElementById('edit-goal').value);
-        setLang(currentLang); // refresh goal text
-        updateUI();
-    }
-
-    // --- CORE GAME LOGIC ---
-    function startGame() {
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('lang-container').style.display = 'none'; // hide lang switch during game
-        gameState = 'PLAY';
-        resetGameScene();
-    }
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        if(isLoaded && gameState === 'PLAY') resetGameScene();
-    }
-
-    function resetGameScene() {
-        cupid = { x: canvas.width - 300, baseY: canvas.height / 2 - 100, y: 0, w: 140, h: 170, phase: Math.random()*20 };
-        note = { active: false, x: 0, y: 0, vx: 0, vy: 0, rot: 0 };
-        spawnTarget();
-        wind = (Math.random() * 0.44 - 0.22);
+    function saveAndApply() {
+        config.cupidImg = document.getElementById('edit-cupid-url').value;
+        config.bgImg = document.getElementById('edit-bg-url').value;
+        config.title = document.getElementById('edit-title-ru').value;
+        config.desc = document.getElementById('edit-desc-ru').value;
+        config.goal = parseInt(document.getElementById('edit-goal').value);
         
-        const t = i18n[currentLang];
-        document.getElementById('wind-ui').innerText = `${t.wind}: ${wind > 0 ? '→' : '←'} ${(Math.abs(wind)*100).toFixed(0)}`;
-        document.getElementById('power-fill').style.width = '0%';
+        try {
+            config.questions = JSON.parse(document.getElementById('edit-questions').value);
+        } catch(e) { alert("Ошибка в JSON вопросов!"); }
+
+        updateDisplayTexts();
+        loadAssets(); // Перезагружаем картинки, если ссылки изменились
+        toggleEditor();
+    }
+
+    function updateDisplayTexts() {
+        document.getElementById('display-title').innerText = config.title;
+        document.getElementById('display-desc').innerHTML = config.desc;
+    }
+
+    // Игровая логика
+    function loadAssets() {
+        isLoaded = false;
+        let urls = {
+            bg: config.bgImg,
+            cupid: config.cupidImg,
+            p1: 'https://i.postimg.cc/VLPMHVVY/10.png',
+            p2: 'https://i.postimg.cc/Hs05G9qT/2.png'
+        };
+        let loaded = 0;
+        for(let key in urls) {
+            let img = new Image();
+            img.src = urls[key];
+            img.onload = () => { if(++loaded === Object.keys(urls).length) { isLoaded = true; resetScene(); } };
+            images[key] = img;
+        }
+    }
+
+    function resetScene() {
+        cupid = { x: canvas.width - 280, baseY: canvas.height / 2 - 80, y: 0, w: 130, h: 160, phase: 0 };
+        note = { active: false, x: 0, y: 0, vx: 0, vy: 0 };
+        wind = (Math.random() * 0.4 - 0.2);
+        document.getElementById('wind-ui').innerText = "Wind: " + (wind > 0 ? "→ " : "← ") + Math.abs(wind*100).toFixed(0);
+        spawnTarget();
     }
 
     function spawnTarget() {
-        const url = assets.people[Math.floor(Math.random() * assets.people.length)];
-        target = { x: 80 + Math.random() * (canvas.width * 0.3), y: canvas.height * 0.58, w: 160, h: 210, img: images[url], hit: false };
+        target = { x: 50 + Math.random() * 200, y: canvas.height * 0.6, w: 150, h: 200, img: images.p1 };
     }
 
-    function loop() {
-        if(gameState === 'PLAY') {
-            // Background logic
-            if(bgColor) {
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                // Draw some 'sand' details implicitly via color
-            } else {
-                ctx.drawImage(images[assets.bg], 0, 0, canvas.width, canvas.height);
-            }
-            
-            cupid.phase += 0.03;
-            cupid.y = cupid.baseY + Math.sin(cupid.phase) * 180;
-            
-            if(target.hit) { ctx.save(); ctx.shadowBlur = 40; ctx.shadowColor = "#ff9800"; }
-            ctx.drawImage(target.img, target.x, target.y, target.w, target.h);
-            ctx.restore();
-            
-            ctx.drawImage(images[assets.cupid], cupid.x, cupid.y, cupid.w, cupid.h);
-            
-            if(mouse.down && !note.active) {
-                const sx = cupid.x + 20, sy = cupid.y + 70;
-                const dist = Math.hypot(sx - mouse.x, sy - mouse.y);
-                document.getElementById('power-fill').style.width = Math.min(100, (dist / 250) * 100) + '%';
-            }
-            
-            if(note.active) {
-                note.vx += wind; note.vy += 0.22; note.x += note.vx; note.y += note.vy; note.rot += 0.25;
-                
-                if(Math.random() > 0.5) {
-                    particles.push({ x: note.x, y: note.y, vx: 0, vy: 0, life: 0.6, size: 10 + Math.random()*10, char: projectileChar });
-                }
-                
-                // Draw Projectile
-                ctx.save(); ctx.translate(note.x, note.y); ctx.rotate(note.rot);
-                ctx.font = '40px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(projectileChar, 0, 0);
-                ctx.restore();
-                
-                const padding = 35; 
-                if(note.x > target.x + padding && note.x < target.x + target.w - padding && 
-                   note.y > target.y + padding && note.y < target.y + target.h - padding) {
-                    target.hit = true; note.active = false; combo++;
-                    score += 50; updateUI();
-                    createExplosion(note.x, note.y);
-                    if(combo > 1) showCombo();
-                    setTimeout(resetGameScene, 800);
-                } else if(note.y > canvas.height || note.x < 0 || note.x > canvas.width) {
-                    note.active = false; combo = 0; showQuiz();
-                }
-            }
-            
-            particles.forEach((p, i) => {
-                p.x += p.vx; p.y += p.vy; p.life -= 0.02;
-                ctx.globalAlpha = p.life; ctx.font = p.size + 'px serif';
-                ctx.fillText(p.char, p.x, p.y);
-                if(p.life <= 0) particles.splice(i, 1);
-            });
-            ctx.globalAlpha = 1;
-        }
-        requestAnimationFrame(loop);
-    }
-
-    function updateUI() {
-        document.getElementById('progress-fill').style.width = Math.min(100, (score/targetScore)*100) + '%';
-        if(score >= targetScore) { gameState = 'END'; document.getElementById('end-screen').style.display = 'flex'; }
-    }
-
-    function createExplosion(x, y) {
-        for(let i=0; i<12; i++) {
-            particles.push({ x, y, vx:(Math.random()-0.5)*15, vy:(Math.random()-0.5)*15, life:1, size:Math.random()*20+20, char: projectileChar });
-        }
-    }
-
-    function showCombo() {
-        const el = document.getElementById('combo-msg');
-        el.style.display = 'block'; el.style.left = target.x + 'px'; el.style.top = target.y - 50 + 'px';
-        el.innerText = `COMBO x${combo}!`; setTimeout(() => el.style.display = 'none', 1000);
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        gameState = 'PLAY';
+        score = 0;
+        questionPool = [...config.questions];
     }
 
     function showQuiz() {
         gameState = 'QUIZ';
-        if (questionPool.length === 0) questionPool = [...grammarBank];
-        const rIndex = Math.floor(Math.random() * questionPool.length);
-        const task = questionPool.splice(rIndex, 1)[0];
-        document.getElementById('quiz-question').innerText = task.q;
-        const optDiv = document.getElementById('options'); 
-        optDiv.innerHTML = '';
-        task.a.forEach((text, i) => {
-            const btn = document.createElement('button'); 
-            btn.className = 'opt-btn'; 
-            btn.innerText = text;
-            btn.onclick = () => {
-                const allBtns = document.querySelectorAll('.opt-btn');
-                allBtns.forEach(b => b.classList.add('disabled'));
-                if(i === task.c) {
-                    btn.classList.add('correct');
-                    score += 150;
-                } else {
-                    btn.classList.add('wrong');
-                    allBtns[task.c].classList.add('correct');
-                }
-                setTimeout(() => {
-                    updateUI(); 
-                    gameState = 'PLAY'; 
-                    document.getElementById('quiz-overlay').style.display = 'none'; 
-                    resetGameScene();
-                }, 1200); 
+        if(questionPool.length === 0) questionPool = [...config.questions];
+        let qData = questionPool.pop();
+        
+        document.getElementById('quiz-question').innerText = qData.q;
+        let optContainer = document.getElementById('options');
+        optContainer.innerHTML = '';
+        
+        qData.a.forEach((text, i) => {
+            let b = document.createElement('button');
+            b.className = 'btn';
+            b.style.margin = "5px";
+            b.innerText = text;
+            b.onclick = () => {
+                if(i === qData.c) score += 200;
+                document.getElementById('quiz-overlay').style.display = 'none';
+                gameState = 'PLAY';
+                resetScene();
             };
-            optDiv.appendChild(btn);
+            optContainer.appendChild(b);
         });
         document.getElementById('quiz-overlay').style.display = 'flex';
     }
 
-    const handleStart = (e) => { 
-        if(e.target.tagName.toLowerCase() === 'button' || e.target.closest('#editor-overlay')) return;
-        if(gameState === 'PLAY') mouse.down = true; 
-        updateMousePos(e); 
-    };
-    
-    const handleEnd = (e) => {
-        if(e.target.tagName.toLowerCase() === 'button' || e.target.closest('#editor-overlay')) return;
-        if(mouse.down && !note.active && gameState === 'PLAY') {
-            note.active = true; const sx = cupid.x + 20, sy = cupid.y + 70;
-            note.x = sx; note.y = sy;
-            const angle = Math.atan2(sy - mouse.y, sx - mouse.x);
-            const dist = Math.hypot(sx - mouse.x, sy - mouse.y);
-            const force = Math.min(
+    function loop() {
+        if(isLoaded && gameState === 'PLAY') {
+            ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
+            
+            cupid.phase += 0.03;
+            cupid.y = cupid.baseY + Math.sin(cupid.phase) * 150;
+            ctx.drawImage(images.cupid, cupid.x, cupid.y, cupid.w, cupid.h);
+            ctx.drawImage(target.img, target.x, target.y, target.w, target.h);
+
+            if(note.active) {
+                note.vx += wind; note.vy += 0.2;
+                note.x += note.vx; note.y += note.vy;
+                
+                ctx.font = "40px Arial";
+                ctx.fillText("🥞", note.x, note.y);
+
+                // Коллизия
+                if(note.x > target.x && note.x < target.x + target.w && note.y > target.y && note.y < target.y + target.h) {
+                    note.active = false;
+                    score += 100;
+                    setTimeout(resetScene, 500);
+                } else if(note.y > canvas.height || note.x < 0) {
+                    note.active = false;
+                    showQuiz();
+                }
+            }
+        }
+        requestAnimationFrame(loop);
+    }
+
+    // Управление
+    window.addEventListener('mousedown', (e) => {
+        if(gameState !== 'PLAY' || e.target.tagName === 'BUTTON') return;
+        mouse.down = true;
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if(!mouse.down || note.active) return;
+        mouse.down = false;
+        note.active = true;
+        note.x = cupid.x; note.y = cupid.y + 50;
+        let angle = Math.atan2((cupid.y + 50) - e.clientY, cupid.x - e.clientX);
+        let force = 18;
+        note.vx = -Math.cos(angle) * force;
+        note.vy = -Math.sin(angle) * force;
+    });
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    updateDisplayTexts();
+    loadAssets();
+    loop();
+</script>
+</body>
+</html>
