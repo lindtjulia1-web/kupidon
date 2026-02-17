@@ -3,41 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skomorokha Game Builder - List Mode</title>
+    <title>Skomorokha Game Builder - Professional Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Lobster&family=Pacifico&family=Press+Start+2P&family=Rubik+Mono+One&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #ff9800; --bg-editor: #f8f9fa; --border: #e0e0e0; --correct: #4caf50; --wrong: #f44336; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
 
-        .main-layout {
-            display: grid;
-            grid-template-columns: 420px 1fr;
-            width: 100vw;
-            height: 100vh;
-        }
+        .main-layout { display: grid; grid-template-columns: 420px 1fr; width: 100vw; height: 100vh; }
 
-        /* ЛЕВАЯ ПАНЕЛЬ (РЕДАКТОР) */
+        /* РЕДАКТОР */
         .editor-sidebar {
-            background: var(--bg-editor);
-            border-right: 2px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
-            z-index: 10;
+            background: var(--bg-editor); border-right: 2px solid var(--border);
+            display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
+            overflow-y: auto; z-index: 10;
         }
-
-        .editor-sidebar h2 { color: var(--primary); margin-top: 0; font-size: 22px; display: flex; align-items: center; gap: 10px; }
-        
+        .editor-sidebar h2 { color: var(--primary); margin: 0 0 15px 0; font-size: 22px; }
         .editor-group { margin-bottom: 15px; }
         .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 11px; text-transform: uppercase; }
-        .editor-group input, .editor-group textarea { 
-            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; 
-            font-family: inherit; font-size: 14px;
+        .editor-group input, .editor-group textarea, .editor-group select { 
+            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px;
         }
 
-        /* Стили для многострочных списков */
-        .list-area { font-family: monospace !important; font-size: 12px !important; white-space: pre; overflow-x: auto; }
+        .list-area { font-family: monospace !important; font-size: 12px !important; white-space: pre; }
         .q-list { border-top: 3px solid var(--primary) !important; }
         .a-correct { border-top: 3px solid var(--correct) !important; }
         .a-wrong { border-top: 3px solid var(--wrong) !important; }
@@ -45,12 +32,18 @@
         .save-btn {
             background: var(--primary); color: white; border: none; padding: 15px;
             font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer;
-            transition: background 0.2s; position: sticky; bottom: 0; margin-top: 10px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+            margin-top: 10px; box-shadow: 0 4px 10px rgba(255,152,0,0.3);
         }
-        .save-btn:hover { background: #e68a00; }
 
-        /* ПРАВАЯ ЧАСТЬ (ПРЕВЬЮ) */
+        /* БЛОК IFRAME */
+        .iframe-box {
+            margin-top: 20px; padding: 15px; background: #eee; border-radius: 10px; border: 1px dashed #999;
+        }
+        .iframe-code {
+            width: 100%; height: 60px; font-size: 10px; margin-top: 5px; background: #fff; border: 1px solid #ccc;
+        }
+
+        /* ПРЕВЬЮ */
         .preview-container { position: relative; background: #000; overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
@@ -81,13 +74,35 @@
         <h2>⚙️ РЕДАКТОР</h2>
         
         <div class="editor-group">
+            <label>🌍 Язык интерфейса</label>
+            <select id="edit-lang" onchange="applyChanges()">
+                <option value="ru">Русский</option>
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+            </select>
+        </div>
+
+        <div class="editor-group">
+            <label>🎨 Шрифт игры</label>
+            <select id="edit-font" onchange="applyChanges()">
+                <option value="'Segoe UI', sans-serif">Стандартный</option>
+                <option value="'Comfortaa', cursive">Comfortaa (Закругленный)</option>
+                <option value="'Lobster', cursive">Lobster (Рукописный)</option>
+                <option value="'Pacifico', cursive">Pacifico (Мягкий)</option>
+                <option value="'Press Start 2P', cursive">Retro 8-bit</option>
+                <option value="'Rubik Mono One', sans-serif">Rubik (Жирный)</option>
+            </select>
+        </div>
+
+        <div class="editor-group">
             <label>Заголовок приветствия</label>
             <input type="text" id="edit-title" value="Привет! Я Скоморох! 🤡">
         </div>
 
         <div class="editor-group">
             <label>Описание задачи</label>
-            <textarea id="edit-desc" rows="2">Я угощаю всех блинами! Помоги мне накормить гостей и выучи Past Simple!</textarea>
+            <textarea id="edit-desc" rows="2">Накорми гостей блинами и выучи Past Simple!</textarea>
         </div>
 
         <div class="editor-group">
@@ -100,24 +115,29 @@
             <input type="number" id="edit-goal" value="3000">
         </div>
 
-        <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 5px 0 15px 0;">
+        <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 10px 0;">
         
         <div class="editor-group">
-            <label>📝 Список вопросов (каждый с новой строки)</label>
-            <textarea id="list-questions" class="list-area q-list" rows="5" placeholder="Вопрос 1&#10;Вопрос 2"></textarea>
+            <label>📝 Список вопросов</label>
+            <textarea id="list-questions" class="list-area q-list" rows="3"></textarea>
         </div>
 
         <div class="editor-group">
-            <label>✅ Правильные ответы (один на строку)</label>
-            <textarea id="list-correct" class="list-area a-correct" rows="5" placeholder="Верно 1&#10;Верно 2"></textarea>
+            <label>✅ Правильные ответы</label>
+            <textarea id="list-correct" class="list-area a-correct" rows="3"></textarea>
         </div>
 
         <div class="editor-group">
-            <label>❌ Неправильные ответы (через запятую в строке)</label>
-            <textarea id="list-wrong" class="list-area a-wrong" rows="8" placeholder="ошибка1, ошибка2&#10;ошибка3, ошибка4"></textarea>
+            <label>❌ Неправильные (через запятую)</label>
+            <textarea id="list-wrong" class="list-area a-wrong" rows="3"></textarea>
         </div>
 
         <button class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
+
+        <div class="iframe-box">
+            <label style="font-size: 10px; font-weight: bold;">📦 КОД ДЛЯ ВСТАВКИ (IFRAME):</label>
+            <textarea id="iframe-output" class="iframe-code" readonly onclick="this.select()"></textarea>
+        </div>
     </aside>
 
     <main class="preview-container" id="game-zone">
@@ -128,15 +148,15 @@
 
         <div id="start-screen" class="game-overlay">
             <div class="game-card">
-                <h1 id="disp-title" style="margin: 0 0 10px 0; font-size: 24px;">Привет! Я Скоморох! 🤡</h1>
-                <p id="disp-desc" style="font-size: 16px;">Накорми всех блинами!</p>
-                <button class="q-btn" onclick="startGame()" style="font-size: 18px; padding: 15px;">ИГРАТЬ ▶️</button>
+                <h1 id="disp-title" style="margin: 0 0 10px 0; font-size: 24px;"></h1>
+                <p id="disp-desc" style="font-size: 16px;"></p>
+                <button id="btn-play" class="q-btn" onclick="startGame()" style="font-size: 18px; padding: 15px;"></button>
             </div>
         </div>
 
         <div id="quiz-screen" class="game-overlay" style="display: none;">
             <div class="game-card">
-                <h2 style="color: var(--primary); margin-top:0;">Суперсила! ✨</h2>
+                <h2 id="quiz-header" style="color: var(--primary); margin-top:0;"></h2>
                 <p id="quiz-question" style="font-weight: bold; font-size: 18px;"></p>
                 <div id="quiz-options"></div>
             </div>
@@ -151,15 +171,20 @@
     const ctx = canvas.getContext('2d');
     const gameZone = document.getElementById('game-zone');
 
-    let config = {
-        title: "", desc: "", bg: "", goal: 3000,
-        questions: []
+    // Локализация
+    const i18n = {
+        ru: { wind: "Ветер", score: "Счет", play: "ИГРАТЬ ▶️", power: "Суперсила! ✨" },
+        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", power: "Superpower! ✨" },
+        de: { wind: "Wind", score: "Punktzahl", play: "SPIELEN ▶️", power: "Superkraft! ✨" },
+        fr: { wind: "Vent", score: "Score", play: "JOUER ▶️", power: "Super-pouvoir! ✨" }
     };
 
+    let config = { title: "", desc: "", bg: "", goal: 3000, questions: [], lang: "ru", font: "" };
+
     const initialData = {
-        q: "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.\nThey ___ (be) happy.",
-        c: "went\nate\nwere",
-        w: "goed, gone\neated, aten\nwas, been"
+        q: "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.",
+        c: "went\nate",
+        w: "goed, gone\neated, aten"
     };
 
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
@@ -172,11 +197,16 @@
     }
 
     function applyChanges() {
+        config.lang = document.getElementById('edit-lang').value;
+        config.font = document.getElementById('edit-font').value;
         config.title = document.getElementById('edit-title').value;
         config.desc = document.getElementById('edit-desc').value;
         config.bg = document.getElementById('edit-bg').value;
         config.goal = parseInt(document.getElementById('edit-goal').value);
         
+        // Применяем шрифт к интерфейсу игры
+        document.querySelectorAll('.game-card, .ui-hud').forEach(el => el.style.fontFamily = config.font);
+
         const qs = document.getElementById('list-questions').value.split('\n');
         const cs = document.getElementById('list-correct').value.split('\n');
         const ws = document.getElementById('list-wrong').value.split('\n');
@@ -184,21 +214,24 @@
         config.questions = [];
         qs.forEach((qText, i) => {
             if(qText.trim()) {
-                // Разбиваем неправильные ответы по запятой и убираем лишние пробелы
                 let wrongChoices = (ws[i] || "").split(',').map(item => item.trim()).filter(item => item !== "");
-                
-                config.questions.push({
-                    q: qText,
-                    // Собираем массив ответов: правильный + все неправильные
-                    a: [cs[i] || "?", ...wrongChoices],
-                    c: 0
-                });
+                config.questions.push({ q: qText, a: [cs[i] || "?", ...wrongChoices], c: 0 });
             }
         });
 
+        // Обновляем тексты
         document.getElementById('disp-title').innerText = config.title;
         document.getElementById('disp-desc').innerHTML = config.desc;
+        document.getElementById('btn-play').innerText = i18n[config.lang].play;
+        document.getElementById('quiz-header').innerText = i18n[config.lang].power;
+        
+        generateIframe();
         loadImages();
+    }
+
+    function generateIframe() {
+        const code = `<iframe src="${window.location.href}" width="800" height="600" frameborder="0"></iframe>`;
+        document.getElementById('iframe-output').value = code;
     }
 
     function loadImages() {
@@ -221,15 +254,21 @@
         cupid = { x: canvas.width - 120, y: canvas.height/2, w: 80, h: 100, phase: 0 };
         target = { x: 50, y: canvas.height * 0.6, w: 100, h: 140 };
         wind = (Math.random() * 0.4 - 0.2);
-        document.getElementById('wind-ui').innerText = "Ветер: " + (wind > 0 ? "→ " : "← ") + Math.abs(wind*100).toFixed(0);
+        updateHUD();
         note.active = false;
+    }
+
+    function updateHUD() {
+        const t = i18n[config.lang];
+        document.getElementById('wind-ui').innerText = `${t.wind}: ${wind > 0 ? "→ " : "← "} ${Math.abs(wind*100).toFixed(0)}`;
+        document.getElementById('score-ui').innerText = `${t.score}: ${score}`;
     }
 
     function startGame() {
         document.getElementById('start-screen').style.display = 'none';
         gameState = 'PLAY';
         score = 0;
-        document.getElementById('score-ui').innerText = "Счет: 0";
+        updateHUD();
     }
 
     function showQuiz() {
@@ -240,17 +279,17 @@
         const optionsDiv = document.getElementById('quiz-options');
         optionsDiv.innerHTML = '';
         
-        // В игре по-прежнему перемешиваем варианты
         let answers = qData.a.map((text, i) => ({ text, correct: i === 0 }));
         answers = answers.sort(() => Math.random() - 0.5);
 
         answers.forEach(ans => {
             const btn = document.createElement('button');
             btn.className = 'q-btn';
+            btn.style.fontFamily = config.font;
             btn.innerText = ans.text;
             btn.onclick = () => {
                 if(ans.correct) score += 200;
-                document.getElementById('score-ui').innerText = "Счет: " + score;
+                updateHUD();
                 document.getElementById('quiz-screen').style.display = 'none';
                 gameState = 'PLAY';
                 resetGame();
@@ -271,12 +310,12 @@
             if(note.active) {
                 note.vx += wind; note.vy += 0.2;
                 note.x += note.vx; note.y += note.vy;
-                ctx.font = "30px Arial";
+                ctx.font = `30px ${config.font.split(',')[0]}`;
                 ctx.fillText("🥞", note.x, note.y);
 
                 if(note.x > target.x && note.x < target.x + target.w && note.y > target.y && note.y < target.y + target.h) {
                     note.active = false; score += 100;
-                    document.getElementById('score-ui').innerText = "Счет: " + score;
+                    updateHUD();
                     setTimeout(resetGame, 500);
                 } else if(note.y > canvas.height || note.x < 0) {
                     note.active = false;
