@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Skomorokha Game Builder</title>
     <style>
-        :root { --primary: #ff9800; --bg-editor: #f8f9fa; --border: #e0e0e0; }
+        :root { --primary: #ff9800; --bg-editor: #f8f9fa; --border: #e0e0e0; --correct: #4caf50; --wrong: #f44336; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
-        /* Основной контейнер-сетка */
         .main-layout {
             display: grid;
-            grid-template-columns: 400px 1fr; /* Левая панель 400px, остальное под игру */
+            grid-template-columns: 420px 1fr;
             width: 100vw;
             height: 100vh;
         }
@@ -31,43 +30,60 @@
         .editor-sidebar h2 { color: var(--primary); margin-top: 0; font-size: 22px; display: flex; align-items: center; gap: 10px; }
         
         .editor-group { margin-bottom: 15px; }
-        .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 13px; text-transform: uppercase; }
+        .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 12px; text-transform: uppercase; }
         .editor-group input, .editor-group textarea { 
             width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; 
             font-family: inherit; font-size: 14px;
         }
-        .editor-group textarea { resize: vertical; min-height: 80px; }
+
+        /* Конструктор вопросов */
+        .question-item {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .question-item h4 { margin: 0 0 10px 0; font-size: 14px; color: var(--primary); }
+        .input-correct { border-left: 5px solid var(--correct) !important; }
+        .input-wrong { border-left: 5px solid var(--wrong) !important; margin-top: 5px; }
+        
+        .remove-q { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #ccc; font-size: 18px; }
+        .remove-q:hover { color: var(--wrong); }
+
+        .add-q-btn {
+            background: #fff; border: 2px dashed var(--primary); color: var(--primary);
+            padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 20px;
+        }
 
         .save-btn {
             background: var(--primary); color: white; border: none; padding: 15px;
             font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer;
-            transition: background 0.2s; margin-top: 10px;
-        }
-        .save-btn:hover { background: #e68a00; }
-
-        /* ПРАВАЯ ЧАСТЬ (ПРЕВЬЮ ИГРЫ) */
-        .preview-container {
-            position: relative;
-            background: #000;
-            overflow: hidden;
+            transition: background 0.2s; position: sticky; bottom: 0;
         }
 
+        /* ПРАВАЯ ЧАСТЬ (ПРЕВЬЮ) */
+        .preview-container { position: relative; background: #000; overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
-        /* Внутриигровые слои (теперь только внутри preview-container) */
         .game-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;
-            z-index: 5; color: white; text-align: center; pointer-events: auto;
+            z-index: 5; color: white; text-align: center;
         }
         .game-card {
-            background: white; color: #333; padding: 20px; border-radius: 20px;
+            background: white; color: #333; padding: 25px; border-radius: 20px;
             width: 80%; max-width: 400px; border: 5px solid var(--primary);
         }
         .ui-hud {
             position: absolute; top: 15px; left: 15px; right: 15px;
             display: flex; justify-content: space-between; pointer-events: none;
             z-index: 4; color: white; font-weight: bold; text-shadow: 1px 1px 2px #000;
+        }
+        .q-btn {
+            background: var(--primary); color: white; border: none; padding: 10px;
+            margin: 5px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold;
         }
     </style>
 </head>
@@ -97,13 +113,14 @@
             <input type="number" id="edit-goal" value="3000">
         </div>
 
-        <div class="editor-group">
-            <label>Вопросы (JSON)</label>
-            <textarea id="edit-questions" rows="10" style="font-family: monospace; font-size: 12px;"></textarea>
-        </div>
+        <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 10px 0 20px 0;">
+        <label style="font-weight: bold; font-size: 12px; color: #444;">ВОПРОСЫ И ОТВЕТЫ:</label>
+        
+        <div id="questions-container">
+            </div>
 
+        <button class="add-q-btn" onclick="addNewQuestion()">+ ДОБАВИТЬ ВОПРОС</button>
         <button class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
-        <p style="font-size: 11px; color: #888; margin-top: 15px;">* Нажмите кнопку выше, чтобы изменения отобразились в окне справа.</p>
     </aside>
 
     <main class="preview-container" id="game-zone">
@@ -116,7 +133,15 @@
             <div class="game-card">
                 <h1 id="disp-title" style="margin: 0 0 10px 0; font-size: 24px;">Привет! Я Скоморох! 🤡</h1>
                 <p id="disp-desc" style="font-size: 16px;">Накорми всех блинами!</p>
-                <button class="save-btn" onclick="startGame()" style="width: 100%;">ИГРАТЬ ▶️</button>
+                <button class="q-btn" onclick="startGame()" style="font-size: 18px; padding: 15px;">ИГРАТЬ ▶️</button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="game-overlay" style="display: none;">
+            <div class="game-card">
+                <h2 style="color: var(--primary); margin-top:0;">Суперсила! ✨</h2>
+                <p id="quiz-question" style="font-weight: bold; font-size: 18px;"></p>
+                <div id="quiz-options"></div>
             </div>
         </div>
 
@@ -136,27 +161,65 @@
         goal: 3000,
         questions: [
             { q: "Yesterday I ___ (go) to the park.", a: ["went", "goed", "gone"], c: 0 },
-            { q: "She ___ (eat) a big apple.", a: ["eated", "ate", "aten"], c: 1 }
+            { q: "She ___ (eat) a big apple.", a: ["ate", "eated", "aten"], c: 0 }
         ]
     };
 
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
     let images = {}, cupid, target, note = { active: false };
 
+    // КОНСТРУКТОР ВОПРОСОВ В РЕДАКТОРЕ
+    function renderQuestionEditor() {
+        const container = document.getElementById('questions-container');
+        container.innerHTML = '';
+        config.questions.forEach((q, index) => {
+            const qDiv = document.createElement('div');
+            qDiv.className = 'question-item';
+            qDiv.innerHTML = `
+                <span class="remove-q" onclick="removeQuestion(${index})">✖</span>
+                <h4>Вопрос ${index + 1}</h4>
+                <div class="editor-group">
+                    <input type="text" placeholder="Текст вопроса..." value="${q.q}" oninput="updateQ(${index}, 'q', this.value)">
+                </div>
+                <div class="editor-group">
+                    <label>Правильный ответ</label>
+                    <input type="text" class="input-correct" value="${q.a[0]}" oninput="updateA(${index}, 0, this.value)">
+                </div>
+                <div class="editor-group">
+                    <label>Неправильные ответы</label>
+                    <input type="text" class="input-wrong" value="${q.a[1]}" oninput="updateA(${index}, 1, this.value)">
+                    <input type="text" class="input-wrong" value="${q.a[2] || ''}" oninput="updateA(${index}, 2, this.value)">
+                </div>
+            `;
+            container.appendChild(qDiv);
+        });
+    }
+
+    function addNewQuestion() {
+        config.questions.push({ q: "", a: ["", "", ""], c: 0 });
+        renderQuestionEditor();
+    }
+
+    function removeQuestion(index) {
+        config.questions.splice(index, 1);
+        renderQuestionEditor();
+    }
+
+    function updateQ(idx, field, val) { config.questions[idx][field] = val; }
+    function updateA(idx, aIdx, val) { config.questions[idx].a[aIdx] = val; }
+
     function applyChanges() {
         config.title = document.getElementById('edit-title').value;
         config.desc = document.getElementById('edit-desc').value;
         config.bg = document.getElementById('edit-bg').value;
         config.goal = parseInt(document.getElementById('edit-goal').value);
-        try {
-            config.questions = JSON.parse(document.getElementById('edit-questions').value);
-        } catch(e) { console.error("Ошибка в JSON"); }
         
         document.getElementById('disp-title').innerText = config.title;
         document.getElementById('disp-desc').innerHTML = config.desc;
         loadImages();
     }
 
+    // ИГРОВАЯ ЛОГИКА
     function loadImages() {
         isLoaded = false;
         let loaded = 0;
@@ -174,8 +237,8 @@
 
     function resetGame() {
         resize();
-        cupid = { x: canvas.width - 150, y: canvas.height/2, w: 100, h: 130, phase: 0 };
-        target = { x: 50, y: canvas.height * 0.6, w: 120, h: 160 };
+        cupid = { x: canvas.width - 120, y: canvas.height/2, w: 80, h: 100, phase: 0 };
+        target = { x: 50, y: canvas.height * 0.6, w: 100, h: 140 };
         wind = (Math.random() * 0.4 - 0.2);
         document.getElementById('wind-ui').innerText = "Ветер: " + (wind > 0 ? "→ " : "← ") + Math.abs(wind*100).toFixed(0);
         note.active = false;
@@ -185,14 +248,41 @@
         document.getElementById('start-screen').style.display = 'none';
         gameState = 'PLAY';
         score = 0;
+        document.getElementById('score-ui').innerText = "Счет: 0";
+    }
+
+    function showQuiz() {
+        gameState = 'QUIZ';
+        const qData = config.questions[Math.floor(Math.random() * config.questions.length)];
+        document.getElementById('quiz-question').innerText = qData.q;
+        const optionsDiv = document.getElementById('quiz-options');
+        optionsDiv.innerHTML = '';
+        
+        // Перемешиваем ответы для игры
+        let answers = qData.a.map((text, i) => ({ text, correct: i === 0 }));
+        answers = answers.sort(() => Math.random() - 0.5);
+
+        answers.forEach(ans => {
+            const btn = document.createElement('button');
+            btn.className = 'q-btn';
+            btn.innerText = ans.text;
+            btn.onclick = () => {
+                if(ans.correct) score += 200;
+                document.getElementById('score-ui').innerText = "Счет: " + score;
+                document.getElementById('quiz-screen').style.display = 'none';
+                gameState = 'PLAY';
+                resetGame();
+            };
+            optionsDiv.appendChild(btn);
+        });
+        document.getElementById('quiz-screen').style.display = 'flex';
     }
 
     function loop() {
         if(isLoaded && gameState === 'PLAY') {
             ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
-            
             cupid.phase += 0.03;
-            let currentY = cupid.y + Math.sin(cupid.phase) * 80;
+            let currentY = cupid.y + Math.sin(cupid.phase) * 60;
             ctx.drawImage(images.cupid, cupid.x, currentY, cupid.w, cupid.h);
             ctx.drawImage(images.p1, target.x, target.y, target.w, target.h);
 
@@ -208,7 +298,7 @@
                     setTimeout(resetGame, 500);
                 } else if(note.y > canvas.height || note.x < 0) {
                     note.active = false;
-                    resetGame(); // Для превью просто ресетим без квиза
+                    showQuiz();
                 }
             }
         }
@@ -225,20 +315,13 @@
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
-            note = { 
-                active: true, 
-                x: cupid.x, 
-                y: cupid.y + 40, 
-                vx: (mouseX - cupid.x) * 0.05, 
-                vy: (mouseY - cupid.y) * 0.05 
-            };
+            if(mouseX < 0) return; // Клик в редакторе
+            note = { active: true, x: cupid.x, y: cupid.y + 40, vx: (mouseX - cupid.x) * 0.05, vy: (mouseY - cupid.y) * 0.05 };
         }
     });
 
-    // Инициализация JSON в поле
-    document.getElementById('edit-questions').value = JSON.stringify(config.questions, null, 2);
-    
     window.addEventListener('resize', resize);
+    renderQuestionEditor();
     applyChanges();
     loop();
 </script>
