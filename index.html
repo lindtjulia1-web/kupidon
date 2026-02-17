@@ -10,12 +10,7 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
 
         .main-layout { display: grid; grid-template-columns: 420px 1fr; width: 100vw; height: 100vh; }
-        
-        /* Класс для режима "Только игра" */
-        body.play-only .editor-sidebar { display: none !important; }
-        body.play-only .main-layout { grid-template-columns: 1fr; }
 
-        /* РЕДАКТОР */
         .editor-sidebar {
             background: var(--bg-editor); border-right: 2px solid var(--border);
             display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
@@ -24,7 +19,7 @@
         .editor-sidebar h2 { color: var(--primary); margin: 0 0 15px 0; font-size: 22px; }
         .editor-group { margin-bottom: 15px; }
         .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 11px; text-transform: uppercase; }
-        .editor-group input, .editor-group textarea, .editor-group select { 
+        .editor-group input, .editor-group textarea, .editor-group select {
             width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px;
         }
 
@@ -39,16 +34,34 @@
             margin-top: 10px; box-shadow: 0 4px 10px rgba(255,152,0,0.3);
         }
 
-        /* БЛОК IFRAME */
         .iframe-box {
-            margin-top: 20px; padding: 15px; background: #eee; border-radius: 10px; border: 1px dashed #999;
+            margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px;
+            border: 2px solid var(--primary);
         }
+        .iframe-box-label {
+            font-size: 11px; font-weight: bold; color: #d32f2f;
+            text-transform: uppercase; display: block; margin-bottom: 8px;
+        }
+        .iframe-url-field {
+            width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px;
+            box-sizing: border-box; font-size: 12px; margin-bottom: 8px; background: #fff;
+        }
+        .iframe-url-field::placeholder { color: #bbb; }
         .iframe-code {
-            width: 100%; height: 80px; font-size: 10px; margin-top: 5px; background: #fff; border: 1px solid #ccc;
-            resize: none;
+            width: 100%; height: 80px; font-size: 10px; background: #fff; border: 1px solid #ccc;
+            resize: none; border-radius: 6px; box-sizing: border-box; padding: 8px; font-family: monospace;
         }
+        .iframe-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .iframe-refresh-btn {
+            flex: 1; background: var(--primary); color: white; border: none;
+            padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer;
+        }
+        .iframe-copy-btn {
+            flex: 1; background: #d32f2f; color: white; border: none;
+            padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer;
+        }
+        .iframe-hint { font-size: 10px; color: #999; margin: 8px 0 0 0; line-height: 1.5; }
 
-        /* ПРЕВЬЮ */
         .preview-container { position: relative; background: #000; overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
@@ -77,7 +90,7 @@
 <div class="main-layout">
     <aside class="editor-sidebar">
         <h2>⚙️ РЕДАКТОР</h2>
-        
+
         <div class="editor-group">
             <label>🌍 Язык интерфейса</label>
             <select id="edit-lang" onchange="applyChanges()">
@@ -121,7 +134,7 @@
         </div>
 
         <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 10px 0;">
-        
+
         <div class="editor-group">
             <label>📝 Список вопросов</label>
             <textarea id="list-questions" class="list-area q-list" rows="3"></textarea>
@@ -140,8 +153,24 @@
         <button class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
 
         <div class="iframe-box">
-            <label style="font-size: 10px; font-weight: bold; color: #d32f2f;">🚀 КОД ДЛЯ GENIALLY:</label>
-            <textarea id="iframe-output" class="iframe-code" readonly onclick="this.select()"></textarea>
+            <span class="iframe-box-label">🚀 КОД ДЛЯ GENIALLY</span>
+            <input
+                type="text"
+                id="iframe-url"
+                class="iframe-url-field"
+                placeholder="Вставьте URL опубликованного виджета..."
+                oninput="generateIframe()"
+            >
+            <textarea id="iframe-output" class="iframe-code" readonly onclick="this.select()" placeholder="Код появится после ввода URL выше"></textarea>
+            <div class="iframe-actions">
+                <button class="iframe-refresh-btn" onclick="generateIframe()">🔄 Обновить</button>
+                <button class="iframe-copy-btn" id="copy-btn" onclick="copyIframe()">📋 Копировать</button>
+            </div>
+            <p class="iframe-hint">
+                1. Опубликуйте виджет и скопируйте его URL<br>
+                2. Вставьте URL выше — код сгенерируется автоматически<br>
+                3. В Genially: Вставить → HTML → вставьте код
+            </p>
         </div>
     </aside>
 
@@ -194,32 +223,10 @@
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
     let images = {}, cupid, target, note = { active: false };
 
-    // 1. Сначала заполняем дефолтные значения
     function fillInitialLists() {
         document.getElementById('list-questions').value = initialData.q;
         document.getElementById('list-correct').value = initialData.c;
         document.getElementById('list-wrong').value = initialData.w;
-    }
-
-    // 2. Затем проверяем URL (если это встраивание)
-    function checkUrlData() {
-        const params = new URLSearchParams(window.location.search);
-        const data = params.get('g');
-        if (data) {
-            try {
-                const decoded = JSON.parse(decodeURIComponent(escape(atob(data))));
-                if(decoded.t) document.getElementById('edit-title').value = decoded.t;
-                if(decoded.d) document.getElementById('edit-desc').value = decoded.d;
-                if(decoded.b) document.getElementById('edit-bg').value = decoded.b;
-                if(decoded.g) document.getElementById('edit-goal').value = decoded.g;
-                if(decoded.l) document.getElementById('edit-lang').value = decoded.l;
-                if(decoded.f) document.getElementById('edit-font').value = decoded.f;
-                if(decoded.qs) document.getElementById('list-questions').value = decoded.qs;
-                if(decoded.cs) document.getElementById('list-correct').value = decoded.cs;
-                if(decoded.ws) document.getElementById('list-wrong').value = decoded.ws;
-                document.body.classList.add('play-only');
-            } catch(e) { console.warn("Данные URL не найдены или повреждены"); }
-        }
     }
 
     function applyChanges() {
@@ -227,9 +234,9 @@
         config.font = document.getElementById('edit-font').value;
         config.title = document.getElementById('edit-title').value;
         config.desc = document.getElementById('edit-desc').value;
-        config.bg = document.getElementById('edit-bg').value || 'https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png';
-        config.goal = parseInt(document.getElementById('edit-goal').value) || 3000;
-        
+        config.bg = document.getElementById('edit-bg').value;
+        config.goal = parseInt(document.getElementById('edit-goal').value);
+
         document.querySelectorAll('.game-card, .ui-hud').forEach(el => el.style.fontFamily = config.font);
 
         const qs = document.getElementById('list-questions').value.split('\n');
@@ -248,29 +255,48 @@
         document.getElementById('disp-desc').innerHTML = config.desc;
         document.getElementById('btn-play').innerText = i18n[config.lang].play;
         document.getElementById('quiz-header').innerText = i18n[config.lang].power;
-        
+
         generateIframe();
         loadImages();
     }
 
     function generateIframe() {
-        const state = {
-            t: document.getElementById('edit-title').value,
-            d: document.getElementById('edit-desc').value,
-            b: document.getElementById('edit-bg').value,
-            g: document.getElementById('edit-goal').value,
-            l: document.getElementById('edit-lang').value,
-            f: document.getElementById('edit-font').value,
-            qs: document.getElementById('list-questions').value,
-            cs: document.getElementById('list-correct').value,
-            ws: document.getElementById('list-wrong').value
-        };
-        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
-        const baseUrl = window.location.href.split('?')[0];
-        const finalUrl = `${baseUrl}?g=${encoded}`;
-        
-        const geniallyCode = `<div style="width: 100%;"><div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="${finalUrl}" allowfullscreen="true"></iframe></div></div>`;
-        document.getElementById('iframe-output').value = geniallyCode;
+        const urlInput = document.getElementById('iframe-url').value.trim();
+        const output = document.getElementById('iframe-output');
+
+        if (!urlInput) {
+            output.value = '';
+            return;
+        }
+
+        let url = urlInput;
+        if (!/^https?:\/\//i.test(url)) {
+            url = 'https://' + url;
+        }
+
+        // Враппер сохраняет пропорции 16:9 для корректного отображения в Genially
+        const geniallyCode = `<div style="width:100%;"><div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;"><iframe src="${url}" frameborder="0" width="1200" height="675" style="position:absolute;top:0;left:0;width:100%;height:100%;" allowfullscreen scrolling="yes" allownetworking="all"></iframe></div></div>`;
+
+        output.value = geniallyCode;
+    }
+
+    function copyIframe() {
+        const output = document.getElementById('iframe-output');
+        if (!output.value) {
+            alert('Сначала введите URL виджета!');
+            return;
+        }
+        output.select();
+        document.execCommand('copy');
+
+        const btn = document.getElementById('copy-btn');
+        const orig = btn.innerText;
+        btn.innerText = '✅ Скопировано!';
+        btn.style.background = '#388e3c';
+        setTimeout(() => {
+            btn.innerText = orig;
+            btn.style.background = '#d32f2f';
+        }, 2000);
     }
 
     function loadImages() {
@@ -285,7 +311,6 @@
             images[k] = new Image();
             images[k].src = assets[k];
             images[k].onload = () => { if(++loaded === 3) { isLoaded = true; resetGame(); } };
-            images[k].onerror = () => { if(k === 'bg') { images[k].src = 'https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png'; } };
         }
     }
 
@@ -318,7 +343,7 @@
         document.getElementById('quiz-question').innerText = qData.q;
         const optionsDiv = document.getElementById('quiz-options');
         optionsDiv.innerHTML = '';
-        
+
         let answers = qData.a.map((text, i) => ({ text, correct: i === 0 }));
         answers = answers.sort(() => Math.random() - 0.5);
 
@@ -376,17 +401,14 @@
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
-            if(mouseX < 0) return; 
+            if(mouseX < 0) return;
             note = { active: true, x: cupid.x, y: cupid.y + 40, vx: (mouseX - cupid.x) * 0.05, vy: (mouseY - cupid.y) * 0.05 };
         }
     });
 
     window.addEventListener('resize', resize);
-    
-    // СТРОГИЙ ПОРЯДОК ЗАПУСКА
-    fillInitialLists(); 
-    checkUrlData();     
-    applyChanges();      
+    fillInitialLists();
+    applyChanges();
     loop();
 </script>
 </body>
