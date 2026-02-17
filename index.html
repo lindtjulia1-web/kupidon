@@ -40,7 +40,8 @@
             margin-top: 20px; padding: 15px; background: #eee; border-radius: 10px; border: 1px dashed #999;
         }
         .iframe-code {
-            width: 100%; height: 60px; font-size: 10px; margin-top: 5px; background: #fff; border: 1px solid #ccc;
+            width: 100%; height: 80px; font-size: 10px; margin-top: 5px; background: #fff; border: 1px solid #ccc;
+            resize: none;
         }
 
         /* ПРЕВЬЮ */
@@ -135,7 +136,7 @@
         <button class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
 
         <div class="iframe-box">
-            <label style="font-size: 10px; font-weight: bold;">📦 КОД ДЛЯ ВСТАВКИ (IFRAME):</label>
+            <label style="font-size: 10px; font-weight: bold; color: #d32f2f;">🚀 КОД ДЛЯ GENIALLY:</label>
             <textarea id="iframe-output" class="iframe-code" readonly onclick="this.select()"></textarea>
         </div>
     </aside>
@@ -171,7 +172,6 @@
     const ctx = canvas.getContext('2d');
     const gameZone = document.getElementById('game-zone');
 
-    // Локализация
     const i18n = {
         ru: { wind: "Ветер", score: "Счет", play: "ИГРАТЬ ▶️", power: "Суперсила! ✨" },
         en: { wind: "Wind", score: "Score", play: "PLAY ▶️", power: "Superpower! ✨" },
@@ -204,7 +204,6 @@
         config.bg = document.getElementById('edit-bg').value;
         config.goal = parseInt(document.getElementById('edit-goal').value);
         
-        // Применяем шрифт к интерфейсу игры
         document.querySelectorAll('.game-card, .ui-hud').forEach(el => el.style.fontFamily = config.font);
 
         const qs = document.getElementById('list-questions').value.split('\n');
@@ -219,7 +218,6 @@
             }
         });
 
-        // Обновляем тексты
         document.getElementById('disp-title').innerText = config.title;
         document.getElementById('disp-desc').innerHTML = config.desc;
         document.getElementById('btn-play').innerText = i18n[config.lang].play;
@@ -230,8 +228,10 @@
     }
 
     function generateIframe() {
-        const code = `<iframe src="${window.location.href}" width="800" height="600" frameborder="0"></iframe>`;
-        document.getElementById('iframe-output').value = code;
+        // Код адаптирован специально для Genially: добавляем враппер для сохранения пропорций (16:9)
+        const url = window.location.href;
+        const geniallyCode = `<div style="width: 100%;"><div style="position: relative; padding-bottom: 56.25%; padding-top: 0; height: 0;"><iframe frameborder="0" width="1200px" height="675px" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="${url}" type="text/html" allowscriptaccess="always" allowfullscreen="true" scrolling="yes" allownetworking="all"></iframe></div></div>`;
+        document.getElementById('iframe-output').value = geniallyCode;
     }
 
     function loadImages() {
