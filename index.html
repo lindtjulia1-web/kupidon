@@ -10,9 +10,10 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
 
         .main-layout { display: grid; grid-template-columns: 420px 1fr; width: 100vw; height: 100vh; }
+        
         /* Класс для режима "Только игра" */
-        .play-only .editor-sidebar { display: none !important; }
-        .play-only .main-layout { grid-template-columns: 1fr; }
+        body.play-only .editor-sidebar { display: none !important; }
+        body.play-only .main-layout { grid-template-columns: 1fr; }
 
         /* РЕДАКТОР */
         .editor-sidebar {
@@ -141,7 +142,6 @@
         <div class="iframe-box">
             <label style="font-size: 10px; font-weight: bold; color: #d32f2f;">🚀 КОД ДЛЯ GENIALLY:</label>
             <textarea id="iframe-output" class="iframe-code" readonly onclick="this.select()"></textarea>
-            <p style="font-size: 9px; color: #666; margin-top: 5px;">* Скопируйте этот код и вставьте в Genially через Insert -> Others</p>
         </div>
     </aside>
 
@@ -194,23 +194,200 @@
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
     let images = {}, cupid, target, note = { active: false };
 
-    // НОВОЕ: Загрузка данных из URL для встраивания
+    // 1. Сначала заполняем дефолтные значения
+    function fillInitialLists() {
+        document.getElementById('list-questions').value = initialData.q;
+        document.getElementById('list-correct').value = initialData.c;
+        document.getElementById('list-wrong').value = initialData.w;
+    }
+
+    // 2. Затем проверяем URL (если это встраивание)
     function checkUrlData() {
         const params = new URLSearchParams(window.location.search);
         const data = params.get('g');
         if (data) {
             try {
                 const decoded = JSON.parse(decodeURIComponent(escape(atob(data))));
-                document.getElementById('edit-title').value = decoded.t;
-                document.getElementById('edit-desc').value = decoded.d;
-                document.getElementById('edit-bg').value = decoded.b;
-                document.getElementById('edit-goal').value = decoded.g;
-                document.getElementById('edit-lang').value = decoded.l;
-                document.getElementById('edit-font').value = decoded.f;
-                document.getElementById('list-questions').value = decoded.qs;
-                document.getElementById('list-correct').value = decoded.cs;
-                document.getElementById('list-wrong').value = decoded.ws;
-                
-                // Скрываем редактор, если игра открыта через Genially
+                if(decoded.t) document.getElementById('edit-title').value = decoded.t;
+                if(decoded.d) document.getElementById('edit-desc').value = decoded.d;
+                if(decoded.b) document.getElementById('edit-bg').value = decoded.b;
+                if(decoded.g) document.getElementById('edit-goal').value = decoded.g;
+                if(decoded.l) document.getElementById('edit-lang').value = decoded.l;
+                if(decoded.f) document.getElementById('edit-font').value = decoded.f;
+                if(decoded.qs) document.getElementById('list-questions').value = decoded.qs;
+                if(decoded.cs) document.getElementById('list-correct').value = decoded.cs;
+                if(decoded.ws) document.getElementById('list-wrong').value = decoded.ws;
                 document.body.classList.add('play-only');
-            } catch(e) { console.error("Ошибка
+            } catch(e) { console.warn("Данные URL не найдены или повреждены"); }
+        }
+    }
+
+    function applyChanges() {
+        config.lang = document.getElementById('edit-lang').value;
+        config.font = document.getElementById('edit-font').value;
+        config.title = document.getElementById('edit-title').value;
+        config.desc = document.getElementById('edit-desc').value;
+        config.bg = document.getElementById('edit-bg').value || 'https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png';
+        config.goal = parseInt(document.getElementById('edit-goal').value) || 3000;
+        
+        document.querySelectorAll('.game-card, .ui-hud').forEach(el => el.style.fontFamily = config.font);
+
+        const qs = document.getElementById('list-questions').value.split('\n');
+        const cs = document.getElementById('list-correct').value.split('\n');
+        const ws = document.getElementById('list-wrong').value.split('\n');
+
+        config.questions = [];
+        qs.forEach((qText, i) => {
+            if(qText.trim()) {
+                let wrongChoices = (ws[i] || "").split(',').map(item => item.trim()).filter(item => item !== "");
+                config.questions.push({ q: qText, a: [cs[i] || "?", ...wrongChoices], c: 0 });
+            }
+        });
+
+        document.getElementById('disp-title').innerText = config.title;
+        document.getElementById('disp-desc').innerHTML = config.desc;
+        document.getElementById('btn-play').innerText = i18n[config.lang].play;
+        document.getElementById('quiz-header').innerText = i18n[config.lang].power;
+        
+        generateIframe();
+        loadImages();
+    }
+
+    function generateIframe() {
+        const state = {
+            t: document.getElementById('edit-title').value,
+            d: document.getElementById('edit-desc').value,
+            b: document.getElementById('edit-bg').value,
+            g: document.getElementById('edit-goal').value,
+            l: document.getElementById('edit-lang').value,
+            f: document.getElementById('edit-font').value,
+            qs: document.getElementById('list-questions').value,
+            cs: document.getElementById('list-correct').value,
+            ws: document.getElementById('list-wrong').value
+        };
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+        const baseUrl = window.location.href.split('?')[0];
+        const finalUrl = `${baseUrl}?g=${encoded}`;
+        
+        const geniallyCode = `<div style="width: 100%;"><div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="${finalUrl}" allowfullscreen="true"></iframe></div></div>`;
+        document.getElementById('iframe-output').value = geniallyCode;
+    }
+
+    function loadImages() {
+        isLoaded = false;
+        let loaded = 0;
+        let assets = {
+            bg: config.bg,
+            cupid: 'https://i.postimg.cc/66vncXzr/Dizajn-bez-nazvania-9.png',
+            p1: 'https://i.postimg.cc/VLPMHVVY/10.png'
+        };
+        for(let k in assets) {
+            images[k] = new Image();
+            images[k].src = assets[k];
+            images[k].onload = () => { if(++loaded === 3) { isLoaded = true; resetGame(); } };
+            images[k].onerror = () => { if(k === 'bg') { images[k].src = 'https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png'; } };
+        }
+    }
+
+    function resetGame() {
+        resize();
+        cupid = { x: canvas.width - 120, y: canvas.height/2, w: 80, h: 100, phase: 0 };
+        target = { x: 50, y: canvas.height * 0.6, w: 100, h: 140 };
+        wind = (Math.random() * 0.4 - 0.2);
+        updateHUD();
+        note.active = false;
+    }
+
+    function updateHUD() {
+        const t = i18n[config.lang];
+        document.getElementById('wind-ui').innerText = `${t.wind}: ${wind > 0 ? "→ " : "← "} ${Math.abs(wind*100).toFixed(0)}`;
+        document.getElementById('score-ui').innerText = `${t.score}: ${score}`;
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        gameState = 'PLAY';
+        score = 0;
+        updateHUD();
+    }
+
+    function showQuiz() {
+        if(config.questions.length === 0) { resetGame(); return; }
+        gameState = 'QUIZ';
+        const qData = config.questions[Math.floor(Math.random() * config.questions.length)];
+        document.getElementById('quiz-question').innerText = qData.q;
+        const optionsDiv = document.getElementById('quiz-options');
+        optionsDiv.innerHTML = '';
+        
+        let answers = qData.a.map((text, i) => ({ text, correct: i === 0 }));
+        answers = answers.sort(() => Math.random() - 0.5);
+
+        answers.forEach(ans => {
+            const btn = document.createElement('button');
+            btn.className = 'q-btn';
+            btn.style.fontFamily = config.font;
+            btn.innerText = ans.text;
+            btn.onclick = () => {
+                if(ans.correct) score += 200;
+                updateHUD();
+                document.getElementById('quiz-screen').style.display = 'none';
+                gameState = 'PLAY';
+                resetGame();
+            };
+            optionsDiv.appendChild(btn);
+        });
+        document.getElementById('quiz-screen').style.display = 'flex';
+    }
+
+    function loop() {
+        if(isLoaded && gameState === 'PLAY') {
+            ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
+            cupid.phase += 0.03;
+            let currentY = cupid.y + Math.sin(cupid.phase) * 60;
+            ctx.drawImage(images.cupid, cupid.x, currentY, cupid.w, cupid.h);
+            ctx.drawImage(images.p1, target.x, target.y, target.w, target.h);
+
+            if(note.active) {
+                note.vx += wind; note.vy += 0.2;
+                note.x += note.vx; note.y += note.vy;
+                ctx.font = `30px ${config.font.split(',')[0]}`;
+                ctx.fillText("🥞", note.x, note.y);
+
+                if(note.x > target.x && note.x < target.x + target.w && note.y > target.y && note.y < target.y + target.h) {
+                    note.active = false; score += 100;
+                    updateHUD();
+                    setTimeout(resetGame, 500);
+                } else if(note.y > canvas.height || note.x < 0) {
+                    note.active = false;
+                    showQuiz();
+                }
+            }
+        }
+        requestAnimationFrame(loop);
+    }
+
+    function resize() {
+        canvas.width = gameZone.clientWidth;
+        canvas.height = gameZone.clientHeight;
+    }
+
+    window.addEventListener('mousedown', (e) => {
+        if(gameState === 'PLAY' && !note.active) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            if(mouseX < 0) return; 
+            note = { active: true, x: cupid.x, y: cupid.y + 40, vx: (mouseX - cupid.x) * 0.05, vy: (mouseY - cupid.y) * 0.05 };
+        }
+    });
+
+    window.addEventListener('resize', resize);
+    
+    // СТРОГИЙ ПОРЯДОК ЗАПУСКА
+    fillInitialLists(); 
+    checkUrlData();     
+    applyChanges();      
+    loop();
+</script>
+</body>
+</html>
