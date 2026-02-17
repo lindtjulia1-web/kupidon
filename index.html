@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skomorokha Game Builder - Professional Mode</title>
+    <title>РЕДАКТОР</title>
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Lobster&family=Pacifico&family=Press+Start+2P&family=Rubik+Mono+One&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #ff9800; --bg-editor: #f8f9fa; --border: #e0e0e0; --correct: #4caf50; --wrong: #f44336; }
@@ -22,7 +22,7 @@
             display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
             overflow-y: auto; z-index: 10;
         }
-        .editor-sidebar h2 { color: var(--primary); margin: 0 0 15px 0; font-size: 22px; }
+        .editor-sidebar h2 { color: var(--primary); margin: 0 0 15px 0; font-size: 22px; font-weight: bold; }
         .editor-group { margin-bottom: 15px; }
         .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 11px; text-transform: uppercase; }
         .editor-group input, .editor-group textarea, .editor-group select { 
@@ -38,6 +38,7 @@
             background: var(--primary); color: white; border: none; padding: 15px;
             font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer;
             margin-top: 10px; box-shadow: 0 4px 10px rgba(255,152,0,0.3);
+            text-transform: uppercase;
         }
 
         /* БЛОК IFRAME */
@@ -80,7 +81,7 @@
         <h2>⚙️ РЕДАКТОР</h2>
         
         <div class="editor-group">
-            <label>🌍 Язык интерфейса</label>
+            <label>🌍 ЯЗЫК ИНТЕРФЕЙСА</label>
             <select id="edit-lang" onchange="applyChanges()">
                 <option value="ru">Русский</option>
                 <option value="en">English</option>
@@ -90,7 +91,7 @@
         </div>
 
         <div class="editor-group">
-            <label>🎨 Шрифт игры</label>
+            <label>🎨 ШРИФТ ИГРЫ</label>
             <select id="edit-font" onchange="applyChanges()">
                 <option value="'Segoe UI', sans-serif">Стандартный</option>
                 <option value="'Comfortaa', cursive">Comfortaa</option>
@@ -100,46 +101,46 @@
         </div>
 
         <div class="editor-group">
-            <label>Заголовок приветствия</label>
+            <label>ЗАГОЛОВОК ПРИВЕТСТВИЯ</label>
             <input type="text" id="edit-title" value="Привет! Я Скоморох! 🤡">
         </div>
 
         <div class="editor-group">
-            <label>Описание задачи</label>
+            <label>ОПИСАНИЕ ЗАДАЧИ</label>
             <textarea id="edit-desc" rows="2">Накорми гостей блинами и выучи Past Simple!</textarea>
         </div>
 
         <div class="editor-group">
-            <label>Фоновое изображение (URL)</label>
+            <label>ФОНОВОЕ ИЗОБРАЖЕНИЕ (URL)</label>
             <input type="text" id="edit-bg" value="https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png">
         </div>
 
         <div class="editor-group">
-            <label>Цель (очки)</label>
+            <label>ЦЕЛЬ (ОЧКИ)</label>
             <input type="number" id="edit-goal" value="3000">
         </div>
 
         <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 10px 0;">
         
         <div class="editor-group">
-            <label>📝 Список вопросов</label>
+            <label>📝 СПИСОК ВОПРОСОВ (КАЖДЫЙ С НОВОЙ СТРОКИ)</label>
             <textarea id="list-questions" class="list-area q-list" rows="3"></textarea>
         </div>
 
         <div class="editor-group">
-            <label>✅ Правильные ответы</label>
+            <label>✅ ПРАВИЛЬНЫЕ ОТВЕТЫ (ОДИН НА СТРОКУ)</label>
             <textarea id="list-correct" class="list-area a-correct" rows="3"></textarea>
         </div>
 
         <div class="editor-group">
-            <label>❌ Неправильные (через запятую)</label>
+            <label>❌ НЕПРАВИЛЬНЫЕ ОТВЕТЫ (ЧЕРЕЗ ЗАПЯТУЮ В СТРОКЕ)</label>
             <textarea id="list-wrong" class="list-area a-wrong" rows="3"></textarea>
         </div>
 
         <button class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
 
         <div class="iframe-box">
-            <label style="font-size: 10px; font-weight: bold; color: #d32f2f;">🚀 КОД ДЛЯ GENIALLY:</label>
+            <label style="font-size: 11px; font-weight: bold; color: #ff5722;">🚀 КОД ДЛЯ GENIALLY:</label>
             <textarea id="iframe-output" class="iframe-code" readonly onclick="this.select()"></textarea>
         </div>
     </aside>
@@ -185,9 +186,9 @@
     let config = { title: "", desc: "", bg: "", goal: 3000, questions: [], lang: "ru", font: "" };
 
     const initialData = {
-        q: "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.",
-        c: "went\nate",
-        w: "goed, gone\neated, aten"
+        q: "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.\nThey ___ (be) happy.",
+        c: "went\nate\nwere",
+        w: "goed, gone\neated, aten\nwas, been"
     };
 
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
@@ -199,14 +200,12 @@
         document.getElementById('list-wrong').value = initialData.w;
     }
 
-    // ГЛАВНОЕ ИСПРАВЛЕНИЕ ТУТ:
     function checkUrlData() {
         const params = new URLSearchParams(window.location.search);
         const data = params.get('g');
         
-        // Если параметр 'g' есть в URL, значит это встроенный виджет
         if (data) {
-            document.body.classList.add('play-only'); // Прячем редактор немедленно
+            document.body.classList.add('play-only');
             try {
                 const decoded = JSON.parse(decodeURIComponent(escape(atob(data))));
                 if(decoded.t) document.getElementById('edit-title').value = decoded.t;
@@ -269,7 +268,6 @@
         const baseUrl = window.location.origin + window.location.pathname;
         const finalUrl = `${baseUrl}?g=${encoded}`;
         
-        // Код для Genially
         const geniallyCode = `<div style="width: 100%;"><div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="${finalUrl}" allowfullscreen="true"></iframe></div></div>`;
         document.getElementById('iframe-output').value = geniallyCode;
     }
