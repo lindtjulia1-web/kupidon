@@ -33,6 +33,9 @@
         .game-card { background: white; color: #333; padding: 25px; border-radius: 20px; width: 80%; max-width: 400px; border: 5px solid var(--primary); }
         .ui-hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; pointer-events: none; z-index: 4; color: white; font-weight: bold; text-shadow: 1px 1px 2px #000; }
         .q-btn { background: var(--primary); color: white; border: none; padding: 10px; margin: 5px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; font-family: inherit; }
+        
+        /* Стили для фидбека */
+        .feedback-input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; resize: none; }
     </style>
 </head>
 <body>
@@ -126,6 +129,16 @@
                 <div id="quiz-options"></div>
             </div>
         </div>
+
+        <div id="feedback-screen" class="game-overlay" style="display: none;">
+            <div class="game-card">
+                <h2 id="fb-header">Молодец!</h2>
+                <p id="fb-text">Как тебе игра? Оставь свой отзыв:</p>
+                <textarea id="fb-comment" class="feedback-input" rows="3" placeholder="Ваше мнение..."></textarea>
+                <button class="q-btn" onclick="sendFeedback()">ОТПРАВИТЬ</button>
+            </div>
+        </div>
+
         <canvas id="game-canvas"></canvas>
     </main>
 </div>
@@ -136,10 +149,10 @@
     const gameZone = document.getElementById('game-zone');
 
     const i18n = {
-        ru: { wind: "Ветер", score: "Счёт", play: "ИГРАТЬ ▶️", quiz: "Вопрос!" },
-        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", quiz: "Question!" },
-        de: { wind: "Wind", score: "Ergebnis", play: "SPIELEN ▶️", quiz: "Frage!" },
-        fr: { wind: "Vent", score: "Score", play: "JOUER ▶️", quiz: "Question!" }
+        ru: { wind: "Ветер", score: "Счёт", play: "ИГРАТЬ ▶️", quiz: "Вопрос!", thanks: "Спасибо за отзыв!" },
+        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", quiz: "Question!", thanks: "Thanks for feedback!" },
+        de: { wind: "Wind", score: "Ergebnis", play: "SPIELEN ▶️", quiz: "Frage!", thanks: "Danke!" },
+        fr: { wind: "Vent", score: "Score", play: "JOUER ▶️", quiz: "Question!", thanks: "Merci!" }
     };
 
     let config = { title: "", desc: "", bg: "", questions: [], lang: "ru", font: "'Segoe UI', sans-serif", size: 2 };
@@ -153,7 +166,6 @@
         config.title = document.getElementById('edit-title').value;
         config.desc = document.getElementById('edit-desc').value;
         
-        // Применяем шрифт к интерфейсу редактора и игры
         document.body.style.setProperty('--current-font', config.font);
         gameZone.style.fontFamily = config.font;
         
@@ -230,8 +242,11 @@
     }
 
     function startGame() {
+        score = 0;
         document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('feedback-screen').style.display = 'none';
         gameState = 'PLAY';
+        resetGame();
     }
 
     function loop() {
@@ -253,7 +268,10 @@
                     ctx.fillText("🥞", note.x, note.y);
 
                     if(note.x > target.x && note.x < target.x + target.w && note.y > target.y && note.y < target.y + target.h) {
-                        note.active = false; score += 100; updateHUD(); setTimeout(resetGame, 300);
+                        note.active = false; score += 100; updateHUD(); 
+                        // Если набрали 500 очков — показываем фидбек
+                        if(score >= 500) { setTimeout(showFeedback, 500); } 
+                        else { setTimeout(resetGame, 300); }
                     } else if(note.y > canvas.height || note.x < 0 || note.x > canvas.width) {
                         note.active = false; showQuiz();
                     }
@@ -281,6 +299,22 @@
         document.getElementById('quiz-screen').style.display = 'flex';
     }
 
+    // ФУНКЦИИ ФИДБЕКА
+    function showFeedback() {
+        gameState = 'FEEDBACK';
+        document.getElementById('feedback-screen').style.display = 'flex';
+    }
+
+    function sendFeedback() {
+        const comment = document.getElementById('fb-comment').value;
+        console.log("Feedback received:", comment); // Здесь можно отправить данные на сервер
+        alert(i18n[config.lang].thanks);
+        document.getElementById('fb-comment').value = '';
+        document.getElementById('feedback-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+        gameState = 'START';
+    }
+
     window.addEventListener('mousedown', (e) => {
         if(gameState === 'PLAY' && !note.active) {
             const rect = canvas.getBoundingClientRect();
@@ -294,9 +328,9 @@
     const params = new URLSearchParams(window.location.search);
     if(params.get('g')) document.body.classList.add('play-only');
     
-    document.getElementById('list-questions').value = "Yesterday I ___ (go) to the park.\nSie ___ (essen) einen Apfel.\nI ___ (be) happy today.";
-    document.getElementById('list-correct').value = "went\nas\nam";
-    document.getElementById('list-wrong').value = "goed, gone\ngeessen, esst\nis, are";
+    document.getElementById('list-questions').value = "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.\nThey ___ (be) happy.";
+    document.getElementById('list-correct').value = "went\nate\nwere";
+    document.getElementById('list-wrong').value = "goed, gone\neated, aten\nwas, been";
     
     applyChanges();
     loop();
