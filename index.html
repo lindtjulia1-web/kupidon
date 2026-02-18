@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>РЕДАКТОР</title>
-    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Lobster&family=Pacifico&family=Press+Start+2P&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+    <title>РЕДАКТОР СКОМОРОХА</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Lobster&family=Pacifico&family=Press+Start+2P&family=Rubik+Mono+One&family=Marck+Script&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #ff9800; --bg-editor: #f8f9fa; --border: #e0e0e0; --correct: #4caf50; --wrong: #f44336; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
@@ -12,22 +12,27 @@
         body.play-only .editor-sidebar { display: none !important; }
         body.play-only .main-layout { display: block !important; grid-template-columns: 1fr !important; }
         body.play-only .preview-container { width: 100vw; height: 100vh; }
+        
         .editor-sidebar { background: var(--bg-editor); border-right: 2px solid var(--border); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; overflow-y: auto; z-index: 10; }
         .editor-sidebar h2 { color: var(--primary); margin: 0 0 15px 0; font-size: 22px; font-weight: bold; }
         .editor-group { margin-bottom: 15px; }
         .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 11px; text-transform: uppercase; }
         .editor-group input, .editor-group textarea, .editor-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        
         .list-area { font-family: monospace !important; font-size: 12px !important; white-space: pre; }
         .save-btn { background: var(--primary); color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; margin-top: 10px; text-transform: uppercase; transition: 0.2s; }
         .save-btn:hover { background: #e68a00; }
+        
         .iframe-box { margin-top: 20px; padding: 15px; background: #eee; border-radius: 10px; border: 1px dashed #999; }
         .iframe-code { width: 100%; height: 80px; font-size: 10px; margin-top: 5px; background: #fff; border: 1px solid #ccc; resize: none; }
+        
         .preview-container { position: relative; background: #000; overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+        
         .game-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 5; color: white; text-align: center; }
         .game-card { background: white; color: #333; padding: 25px; border-radius: 20px; width: 80%; max-width: 400px; border: 5px solid var(--primary); }
         .ui-hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; pointer-events: none; z-index: 4; color: white; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-        .q-btn { background: var(--primary); color: white; border: none; padding: 10px; margin: 5px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; }
+        .q-btn { background: var(--primary); color: white; border: none; padding: 10px; margin: 5px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; font-family: inherit; }
     </style>
 </head>
 <body>
@@ -35,50 +40,67 @@
 <div class="main-layout">
     <aside class="editor-sidebar">
         <h2>⚙️ РЕДАКТОР</h2>
+        
         <div class="editor-group">
             <label>🌍 ЯЗЫК ИНТЕРФЕЙСА</label>
             <select id="edit-lang" onchange="applyChanges()">
-                <option value="ru">Русский</option>
-                <option value="en">English</option>
+                <option value="ru">🇷🇺 Русский</option>
+                <option value="en">🇺🇸 English</option>
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="fr">🇫🇷 Français</option>
             </select>
         </div>
+
         <div class="editor-group">
             <label>🎨 ШРИФТ ИГРЫ</label>
             <select id="edit-font" onchange="applyChanges()">
                 <option value="'Segoe UI', sans-serif">Стандартный</option>
-                <option value="'Comfortaa', cursive">Comfortaa</option>
-                <option value="'Press Start 2P', cursive">Retro 8-bit</option>
+                <option value="'Comfortaa', cursive">Comfortaa (Милый)</option>
+                <option value="'Lobster', cursive">Lobster (Ретро)</option>
+                <option value="'Pacifico', cursive">Pacifico (Рукописный)</option>
+                <option value="'Press Start 2P', cursive">Pixel (8-бит)</option>
+                <option value="'Rubik Mono One', sans-serif">Bold (Жирный)</option>
+                <option value="'Marck Script', cursive">Elegant (Тонкий)</option>
             </select>
         </div>
+
         <div class="editor-group">
             <label>🤡 РАЗМЕР СКОМОРОХА</label>
             <input type="range" id="edit-size" min="0.5" max="3" step="0.1" value="2" oninput="applyChanges()">
         </div>
+
         <div class="editor-group">
             <label>ЗАГОЛОВОК</label>
             <input type="text" id="edit-title" value="Привет! Я Скоморох! 🤡">
         </div>
+
         <div class="editor-group">
             <label>ОПИСАНИЕ</label>
             <textarea id="edit-desc" rows="2">Накорми гостей блинами!</textarea>
         </div>
+
         <div class="editor-group">
             <label>ФОН (URL)</label>
             <input type="text" id="edit-bg" value="https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png">
         </div>
+
         <div class="editor-group">
-            <label>ВОПРОСЫ (КАЖДЫЙ С НОВОЙ СТРОКИ)</label>
+            <label>ВОПРОСЫ (ПО ОДНОМУ НА СТРОКУ)</label>
             <textarea id="list-questions" class="list-area" rows="3"></textarea>
         </div>
+
         <div class="editor-group">
             <label>ОТВЕТЫ (ПРАВИЛЬНЫЙ НА СТРОКУ)</label>
             <textarea id="list-correct" class="list-area" rows="3"></textarea>
         </div>
+
         <div class="editor-group">
             <label>НЕПРАВИЛЬНЫЕ (ЧЕРЕЗ ЗАПЯТУЮ)</label>
             <textarea id="list-wrong" class="list-area" rows="3"></textarea>
         </div>
+
         <button id="main-save-btn" class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
+
         <div class="iframe-box">
             <label>🚀 КОД ДЛЯ ВСТРАИВАНИЯ:</label>
             <textarea id="iframe-output" class="iframe-code" readonly onclick="this.select()"></textarea>
@@ -87,8 +109,8 @@
 
     <main class="preview-container" id="game-zone">
         <div class="ui-hud">
-            <div id="wind-ui">Ветер: 0</div>
-            <div id="score-ui">Счет: 0</div>
+            <div id="wind-ui"></div>
+            <div id="score-ui"></div>
         </div>
         <div id="start-screen" class="game-overlay">
             <div class="game-card">
@@ -112,22 +134,28 @@
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
     const gameZone = document.getElementById('game-zone');
+
     const i18n = {
-        ru: { wind: "Ветер", score: "Счет", play: "ИГРАТЬ ▶️", power: "Вопрос! ✨" },
-        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", power: "Question! ✨" }
+        ru: { wind: "Ветер", score: "Счёт", play: "ИГРАТЬ ▶️", quiz: "Вопрос!" },
+        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", quiz: "Question!" },
+        de: { wind: "Wind", score: "Ergebnis", play: "SPIELEN ▶️", quiz: "Frage!" },
+        fr: { wind: "Vent", score: "Score", play: "JOUER ▶️", quiz: "Question!" }
     };
 
-    let config = { title: "", desc: "", bg: "", questions: [], lang: "ru", font: "", size: 2 };
+    let config = { title: "", desc: "", bg: "", questions: [], lang: "ru", font: "'Segoe UI', sans-serif", size: 2 };
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
     let images = {}, cupid = { x: 0, y: 0, w: 0, h: 0, phase: 0 }, target = { x: 50, y: 0, w: 100, h: 140 }, note = { active: false };
 
     function applyChanges() {
-        // Синхронизация данных
         config.lang = document.getElementById('edit-lang').value;
         config.font = document.getElementById('edit-font').value;
         config.size = parseFloat(document.getElementById('edit-size').value);
         config.title = document.getElementById('edit-title').value;
         config.desc = document.getElementById('edit-desc').value;
+        
+        // Применяем шрифт к интерфейсу редактора и игры
+        document.body.style.setProperty('--current-font', config.font);
+        gameZone.style.fontFamily = config.font;
         
         const newBg = document.getElementById('edit-bg').value;
         const bgChanged = (newBg !== config.bg);
@@ -144,7 +172,6 @@
 
         generateIframe();
         
-        // Если фон изменился или игра еще не загружена — грузим картинки. Если нет — просто ресет.
         if(!isLoaded || bgChanged) {
             loadImages();
         } else {
@@ -160,7 +187,7 @@
         try {
             const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
             document.getElementById('iframe-output').value = `<iframe src="${window.location.origin}${window.location.pathname}?g=${encoded}" width="800" height="450"></iframe>`;
-        } catch(e) { console.error("Iframe generation failed"); }
+        } catch(e) {}
     }
 
     function loadImages() {
@@ -171,27 +198,12 @@
             cupid: 'https://i.postimg.cc/66vncXzr/Dizajn-bez-nazvania-9.png', 
             p1: 'https://i.postimg.cc/VLPMHVVY/10.png' 
         };
-        const total = Object.keys(assets).length;
-
         for(let k in assets) {
             images[k] = new Image();
             images[k].crossOrigin = "anonymous";
             images[k].src = assets[k];
-            images[k].onload = () => {
-                loadedCount++;
-                if(loadedCount === total) {
-                    isLoaded = true;
-                    resetGame();
-                }
-            };
-            images[k].onerror = () => {
-                // Если картинка не грузится (например, битый URL фона), всё равно продолжаем
-                loadedCount++;
-                if(loadedCount === total) {
-                    isLoaded = true;
-                    resetGame();
-                }
-            };
+            images[k].onload = () => { if(++loadedCount === 3) { isLoaded = true; resetGame(); } };
+            images[k].onerror = () => { if(++loadedCount === 3) { isLoaded = true; resetGame(); } };
         }
     }
 
@@ -224,30 +236,20 @@
 
     function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
         if(isLoaded) {
-            // Фон
-            if(images.bg && images.bg.complete) {
-                ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
-            } else {
-                ctx.fillStyle = "#1a1a1a";
-                ctx.fillRect(0,0, canvas.width, canvas.height);
-            }
+            if(images.bg && images.bg.complete) ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
+            else { ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0,0, canvas.width, canvas.height); }
             
             if(gameState === 'PLAY') {
                 cupid.phase += 0.03;
                 let curY = (canvas.height/2 - cupid.h/2) + Math.sin(cupid.phase) * 50;
-                
-                // Скоморох
                 if(images.cupid.complete) ctx.drawImage(images.cupid, cupid.x, curY, cupid.w, cupid.h);
-                // Цель
                 if(images.p1.complete) ctx.drawImage(images.p1, target.x, target.y, target.w, target.h);
 
-                // Блин (снаряд)
                 if(note.active) {
                     note.vx += wind; note.vy += 0.2;
                     note.x += note.vx; note.y += note.vy;
-                    ctx.font = "30px Arial";
+                    ctx.font = `30px ${config.font}`;
                     ctx.fillText("🥞", note.x, note.y);
 
                     if(note.x > target.x && note.x < target.x + target.w && note.y > target.y && note.y < target.y + target.h) {
@@ -265,6 +267,7 @@
         if(!config.questions || config.questions.length === 0) return resetGame();
         gameState = 'QUIZ';
         const qData = config.questions[Math.floor(Math.random() * config.questions.length)];
+        document.getElementById('quiz-header').innerText = i18n[config.lang].quiz;
         document.getElementById('quiz-question').innerText = qData.q;
         const opt = document.getElementById('quiz-options');
         opt.innerHTML = '';
@@ -272,11 +275,7 @@
         qData.a.filter(ans => ans.trim() !== "").sort(() => Math.random() - 0.5).forEach(text => {
             const b = document.createElement('button');
             b.className = 'q-btn'; b.innerText = text;
-            b.onclick = () => { 
-                gameState = 'PLAY'; 
-                document.getElementById('quiz-screen').style.display = 'none'; 
-                resetGame(); 
-            };
+            b.onclick = () => { gameState = 'PLAY'; document.getElementById('quiz-screen').style.display = 'none'; resetGame(); };
             opt.appendChild(b);
         });
         document.getElementById('quiz-screen').style.display = 'flex';
@@ -288,30 +287,19 @@
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
             const curY = (canvas.height/2 - cupid.h/2) + Math.sin(cupid.phase) * 50;
-            
-            note = { 
-                active: true, 
-                x: cupid.x, 
-                y: curY + cupid.h/2, 
-                vx: (mouseX - cupid.x) * 0.04, 
-                vy: (mouseY - (curY + cupid.h/2)) * 0.04 
-            };
+            note = { active: true, x: cupid.x, y: curY + cupid.h/2, vx: (mouseX - cupid.x) * 0.04, vy: (mouseY - (curY + cupid.h/2)) * 0.04 };
         }
     });
 
-    // Обработка параметров URL
     const params = new URLSearchParams(window.location.search);
     if(params.get('g')) document.body.classList.add('play-only');
     
-    // Дефолтные вопросы для старта
-    document.getElementById('list-questions').value = "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.";
-    document.getElementById('list-correct').value = "went\nate";
-    document.getElementById('list-wrong').value = "goed, gone\neated, aten";
+    document.getElementById('list-questions').value = "Yesterday I ___ (go) to the park.\nSie ___ (essen) einen Apfel.\nI ___ (be) happy today.";
+    document.getElementById('list-correct').value = "went\nas\nam";
+    document.getElementById('list-wrong').value = "goed, gone\ngeessen, esst\nis, are";
     
     applyChanges();
     loop();
-
-    // Ресайз окна
     window.addEventListener('resize', resetGame);
 </script>
 </body>
