@@ -18,7 +18,8 @@
         .editor-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #444; font-size: 11px; text-transform: uppercase; }
         .editor-group input, .editor-group textarea, .editor-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         .list-area { font-family: monospace !important; font-size: 12px !important; white-space: pre; }
-        .save-btn { background: var(--primary); color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
+        .save-btn { background: var(--primary); color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; margin-top: 10px; text-transform: uppercase; transition: 0.2s; }
+        .save-btn:hover { background: #e68a00; }
         .iframe-box { margin-top: 20px; padding: 15px; background: #eee; border-radius: 10px; border: 1px dashed #999; }
         .iframe-code { width: 100%; height: 80px; font-size: 10px; margin-top: 5px; background: #fff; border: 1px solid #ccc; resize: none; }
         .preview-container { position: relative; background: #000; overflow: hidden; }
@@ -77,7 +78,7 @@
             <label>НЕПРАВИЛЬНЫЕ (ЧЕРЕЗ ЗАПЯТУЮ)</label>
             <textarea id="list-wrong" class="list-area" rows="3"></textarea>
         </div>
-        <button class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
+        <button id="main-save-btn" class="save-btn" onclick="applyChanges()">ОБНОВИТЬ ПРЕВЬЮ</button>
         <div class="iframe-box">
             <label>🚀 КОД ДЛЯ ВСТРАИВАНИЯ:</label>
             <textarea id="iframe-output" class="iframe-code" readonly onclick="this.select()"></textarea>
@@ -121,25 +122,34 @@
     let images = {}, cupid = { x: 0, y: 0, w: 0, h: 0, phase: 0 }, target = { x: 50, y: 0, w: 100, h: 140 }, note = { active: false };
 
     function applyChanges() {
+        // Синхронизация данных
         config.lang = document.getElementById('edit-lang').value;
         config.font = document.getElementById('edit-font').value;
         config.size = parseFloat(document.getElementById('edit-size').value);
         config.title = document.getElementById('edit-title').value;
         config.desc = document.getElementById('edit-desc').value;
-        config.bg = document.getElementById('edit-bg').value;
+        
+        const newBg = document.getElementById('edit-bg').value;
+        const bgChanged = (newBg !== config.bg);
+        config.bg = newBg;
         
         document.getElementById('disp-title').innerText = config.title;
         document.getElementById('disp-desc').innerText = config.desc;
         document.getElementById('btn-play').innerText = i18n[config.lang].play;
         
-        // Сбор вопросов
         const qs = document.getElementById('list-questions').value.split('\n').filter(t => t.trim());
         const cs = document.getElementById('list-correct').value.split('\n');
         const ws = document.getElementById('list-wrong').value.split('\n');
         config.questions = qs.map((q, i) => ({ q, a: [cs[i] || "?", ...(ws[i] || "").split(',')], c: 0 }));
 
         generateIframe();
-        if(!isLoaded) loadImages(); else resetGame();
+        
+        // Если фон изменился или игра еще не загружена — грузим картинки. Если нет — просто ресет.
+        if(!isLoaded || bgChanged) {
+            loadImages();
+        } else {
+            resetGame();
+        }
     }
 
     function generateIframe() {
@@ -147,18 +157,41 @@
                         qs: document.getElementById('list-questions').value, 
                         cs: document.getElementById('list-correct').value, 
                         ws: document.getElementById('list-wrong').value };
-        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
-        document.getElementById('iframe-output').value = `<iframe src="${window.location.origin}${window.location.pathname}?g=${encoded}" width="800" height="450"></iframe>`;
+        try {
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+            document.getElementById('iframe-output').value = `<iframe src="${window.location.origin}${window.location.pathname}?g=${encoded}" width="800" height="450"></iframe>`;
+        } catch(e) { console.error("Iframe generation failed"); }
     }
 
     function loadImages() {
-        let loaded = 0;
-        const assets = { bg: config.bg, cupid: 'https://i.postimg.cc/66vncXzr/Dizajn-bez-nazvania-9.png', p1: 'https://i.postimg.cc/VLPMHVVY/10.png' };
+        isLoaded = false;
+        let loadedCount = 0;
+        const assets = { 
+            bg: config.bg, 
+            cupid: 'https://i.postimg.cc/66vncXzr/Dizajn-bez-nazvania-9.png', 
+            p1: 'https://i.postimg.cc/VLPMHVVY/10.png' 
+        };
+        const total = Object.keys(assets).length;
+
         for(let k in assets) {
             images[k] = new Image();
             images[k].crossOrigin = "anonymous";
             images[k].src = assets[k];
-            images[k].onload = () => { if(++loaded === 3) { isLoaded = true; resetGame(); } };
+            images[k].onload = () => {
+                loadedCount++;
+                if(loadedCount === total) {
+                    isLoaded = true;
+                    resetGame();
+                }
+            };
+            images[k].onerror = () => {
+                // Если картинка не грузится (например, битый URL фона), всё равно продолжаем
+                loadedCount++;
+                if(loadedCount === total) {
+                    isLoaded = true;
+                    resetGame();
+                }
+            };
         }
     }
 
@@ -166,7 +199,13 @@
         canvas.width = gameZone.clientWidth;
         canvas.height = gameZone.clientHeight;
         const bW = 80, bH = 100;
-        cupid = { x: canvas.width - (bW * config.size) - 40, y: canvas.height/2, w: bW * config.size, h: bH * config.size, phase: 0 };
+        cupid = { 
+            x: canvas.width - (bW * config.size) - 40, 
+            y: canvas.height / 2, 
+            w: bW * config.size, 
+            h: bH * config.size, 
+            phase: 0 
+        };
         target.y = canvas.height * 0.6;
         wind = (Math.random() * 0.4 - 0.2);
         updateHUD();
@@ -184,17 +223,27 @@
     }
 
     function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
         if(isLoaded) {
-            ctx.fillStyle = "#000";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            if(images.bg.complete) ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
+            // Фон
+            if(images.bg && images.bg.complete) {
+                ctx.drawImage(images.bg, 0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = "#1a1a1a";
+                ctx.fillRect(0,0, canvas.width, canvas.height);
+            }
             
             if(gameState === 'PLAY') {
                 cupid.phase += 0.03;
-                let curY = cupid.y + Math.sin(cupid.phase) * 50;
-                ctx.drawImage(images.cupid, cupid.x, curY, cupid.w, cupid.h);
-                ctx.drawImage(images.p1, target.x, target.y, target.w, target.h);
+                let curY = (canvas.height/2 - cupid.h/2) + Math.sin(cupid.phase) * 50;
+                
+                // Скоморох
+                if(images.cupid.complete) ctx.drawImage(images.cupid, cupid.x, curY, cupid.w, cupid.h);
+                // Цель
+                if(images.p1.complete) ctx.drawImage(images.p1, target.x, target.y, target.w, target.h);
 
+                // Блин (снаряд)
                 if(note.active) {
                     note.vx += wind; note.vy += 0.2;
                     note.x += note.vx; note.y += note.vy;
@@ -202,8 +251,8 @@
                     ctx.fillText("🥞", note.x, note.y);
 
                     if(note.x > target.x && note.x < target.x + target.w && note.y > target.y && note.y < target.y + target.h) {
-                        note.active = false; score += 100; updateHUD(); setTimeout(resetGame, 500);
-                    } else if(note.y > canvas.height || note.x < 0) {
+                        note.active = false; score += 100; updateHUD(); setTimeout(resetGame, 300);
+                    } else if(note.y > canvas.height || note.x < 0 || note.x > canvas.width) {
                         note.active = false; showQuiz();
                     }
                 }
@@ -213,16 +262,21 @@
     }
 
     function showQuiz() {
-        if(config.questions.length === 0) return resetGame();
+        if(!config.questions || config.questions.length === 0) return resetGame();
         gameState = 'QUIZ';
         const qData = config.questions[Math.floor(Math.random() * config.questions.length)];
         document.getElementById('quiz-question').innerText = qData.q;
         const opt = document.getElementById('quiz-options');
         opt.innerHTML = '';
-        qData.a.sort(() => Math.random() - 0.5).forEach(text => {
+        
+        qData.a.filter(ans => ans.trim() !== "").sort(() => Math.random() - 0.5).forEach(text => {
             const b = document.createElement('button');
             b.className = 'q-btn'; b.innerText = text;
-            b.onclick = () => { gameState = 'PLAY'; document.getElementById('quiz-screen').style.display = 'none'; resetGame(); };
+            b.onclick = () => { 
+                gameState = 'PLAY'; 
+                document.getElementById('quiz-screen').style.display = 'none'; 
+                resetGame(); 
+            };
             opt.appendChild(b);
         });
         document.getElementById('quiz-screen').style.display = 'flex';
@@ -231,20 +285,34 @@
     window.addEventListener('mousedown', (e) => {
         if(gameState === 'PLAY' && !note.active) {
             const rect = canvas.getBoundingClientRect();
-            note = { active: true, x: cupid.x, y: cupid.y + cupid.h/2, vx: (e.clientX - rect.left - cupid.x) * 0.05, vy: (e.clientY - rect.top - cupid.y) * 0.05 };
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const curY = (canvas.height/2 - cupid.h/2) + Math.sin(cupid.phase) * 50;
+            
+            note = { 
+                active: true, 
+                x: cupid.x, 
+                y: curY + cupid.h/2, 
+                vx: (mouseX - cupid.x) * 0.04, 
+                vy: (mouseY - (curY + cupid.h/2)) * 0.04 
+            };
         }
     });
 
+    // Обработка параметров URL
     const params = new URLSearchParams(window.location.search);
     if(params.get('g')) document.body.classList.add('play-only');
     
-    // Начальные данные
-    document.getElementById('list-questions').value = "Yesterday I ___ (go) to the park.";
-    document.getElementById('list-correct').value = "went";
-    document.getElementById('list-wrong').value = "goed, gone";
+    // Дефолтные вопросы для старта
+    document.getElementById('list-questions').value = "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.";
+    document.getElementById('list-correct').value = "went\nate";
+    document.getElementById('list-wrong').value = "goed, gone\neated, aten";
     
     applyChanges();
     loop();
+
+    // Ресайз окна
+    window.addEventListener('resize', resetGame);
 </script>
 </body>
 </html>
