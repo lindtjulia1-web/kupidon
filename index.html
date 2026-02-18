@@ -290,7 +290,8 @@
 
     function resetGame() {
         resize();
-        cupid = { x: canvas.width - 120, y: canvas.height/2, w: 80, h: 100, phase: 0 };
+        // РАЗМЕР УВЕЛИЧЕН В 2 РАЗА (было 80x100, стало 160x200)
+        cupid = { x: canvas.width - 200, y: canvas.height/2, w: 160, h: 200, phase: 0 };
         target = { x: 50, y: canvas.height * 0.6, w: 100, h: 140 };
         wind = (Math.random() * 0.4 - 0.2);
         updateHUD();
