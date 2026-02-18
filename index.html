@@ -33,9 +33,6 @@
         .game-card { background: white; color: #333; padding: 25px; border-radius: 20px; width: 80%; max-width: 400px; border: 5px solid var(--primary); }
         .ui-hud { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; pointer-events: none; z-index: 4; color: white; font-weight: bold; text-shadow: 1px 1px 2px #000; }
         .q-btn { background: var(--primary); color: white; border: none; padding: 10px; margin: 5px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; font-family: inherit; }
-        
-        /* Стили для фидбека */
-        .feedback-input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; resize: none; }
     </style>
 </head>
 <body>
@@ -87,6 +84,17 @@
             <input type="text" id="edit-bg" value="https://i.postimg.cc/rmvWTnyw/Dizajn-bez-nazvania-10.png">
         </div>
 
+        <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 10px 0;">
+        <div class="editor-group">
+            <label>ФИНАЛ: ЗАГОЛОВОК</label>
+            <input type="text" id="edit-fb-title" value="Молодец!">
+        </div>
+        <div class="editor-group">
+            <label>ФИНАЛ: ТЕКСТ ПОДДЕРЖКИ</label>
+            <textarea id="edit-fb-text" rows="2">Ты отлично справился! Все гости сыты!</textarea>
+        </div>
+        <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 10px 0;">
+
         <div class="editor-group">
             <label>ВОПРОСЫ (ПО ОДНОМУ НА СТРОКУ)</label>
             <textarea id="list-questions" class="list-area" rows="3"></textarea>
@@ -133,9 +141,8 @@
         <div id="feedback-screen" class="game-overlay" style="display: none;">
             <div class="game-card">
                 <h2 id="fb-header">Молодец!</h2>
-                <p id="fb-text">Как тебе игра? Оставь свой отзыв:</p>
-                <textarea id="fb-comment" class="feedback-input" rows="3" placeholder="Ваше мнение..."></textarea>
-                <button class="q-btn" onclick="sendFeedback()">ОТПРАВИТЬ</button>
+                <p id="fb-text">Текст поддержки</p>
+                <button class="q-btn" onclick="closeFeedback()">ОТЛИЧНО!</button>
             </div>
         </div>
 
@@ -149,13 +156,13 @@
     const gameZone = document.getElementById('game-zone');
 
     const i18n = {
-        ru: { wind: "Ветер", score: "Счёт", play: "ИГРАТЬ ▶️", quiz: "Вопрос!", thanks: "Спасибо за отзыв!" },
-        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", quiz: "Question!", thanks: "Thanks for feedback!" },
-        de: { wind: "Wind", score: "Ergebnis", play: "SPIELEN ▶️", quiz: "Frage!", thanks: "Danke!" },
-        fr: { wind: "Vent", score: "Score", play: "JOUER ▶️", quiz: "Question!", thanks: "Merci!" }
+        ru: { wind: "Ветер", score: "Счёт", play: "ИГРАТЬ ▶️", quiz: "Вопрос!" },
+        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", quiz: "Question!" },
+        de: { wind: "Wind", score: "Ergebnis", play: "SPIELEN ▶️", quiz: "Frage!" },
+        fr: { wind: "Vent", score: "Score", play: "JOUER ▶️", quiz: "Question!" }
     };
 
-    let config = { title: "", desc: "", bg: "", questions: [], lang: "ru", font: "'Segoe UI', sans-serif", size: 2 };
+    let config = { title: "", desc: "", bg: "", questions: [], lang: "ru", font: "'Segoe UI', sans-serif", size: 2, fbTitle: "", fbText: "" };
     let gameState = 'START', score = 0, wind = 0, isLoaded = false;
     let images = {}, cupid = { x: 0, y: 0, w: 0, h: 0, phase: 0 }, target = { x: 50, y: 0, w: 100, h: 140 }, note = { active: false };
 
@@ -165,6 +172,8 @@
         config.size = parseFloat(document.getElementById('edit-size').value);
         config.title = document.getElementById('edit-title').value;
         config.desc = document.getElementById('edit-desc').value;
+        config.fbTitle = document.getElementById('edit-fb-title').value;
+        config.fbText = document.getElementById('edit-fb-text').value;
         
         document.body.style.setProperty('--current-font', config.font);
         gameZone.style.fontFamily = config.font;
@@ -192,10 +201,13 @@
     }
 
     function generateIframe() {
-        const state = { t: config.title, d: config.desc, b: config.bg, l: config.lang, f: config.font, s: config.size, 
-                        qs: document.getElementById('list-questions').value, 
-                        cs: document.getElementById('list-correct').value, 
-                        ws: document.getElementById('list-wrong').value };
+        const state = { 
+            t: config.title, d: config.desc, b: config.bg, l: config.lang, f: config.font, s: config.size,
+            fbt: config.fbTitle, fbx: config.fbText,
+            qs: document.getElementById('list-questions').value, 
+            cs: document.getElementById('list-correct').value, 
+            ws: document.getElementById('list-wrong').value 
+        };
         try {
             const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
             document.getElementById('iframe-output').value = `<iframe src="${window.location.origin}${window.location.pathname}?g=${encoded}" width="800" height="450"></iframe>`;
@@ -269,7 +281,6 @@
 
                     if(note.x > target.x && note.x < target.x + target.w && note.y > target.y && note.y < target.y + target.h) {
                         note.active = false; score += 100; updateHUD(); 
-                        // Если набрали 500 очков — показываем фидбек
                         if(score >= 500) { setTimeout(showFeedback, 500); } 
                         else { setTimeout(resetGame, 300); }
                     } else if(note.y > canvas.height || note.x < 0 || note.x > canvas.width) {
@@ -299,17 +310,14 @@
         document.getElementById('quiz-screen').style.display = 'flex';
     }
 
-    // ФУНКЦИИ ФИДБЕКА
     function showFeedback() {
         gameState = 'FEEDBACK';
+        document.getElementById('fb-header').innerText = config.fbTitle;
+        document.getElementById('fb-text').innerText = config.fbText;
         document.getElementById('feedback-screen').style.display = 'flex';
     }
 
-    function sendFeedback() {
-        const comment = document.getElementById('fb-comment').value;
-        console.log("Feedback received:", comment); // Здесь можно отправить данные на сервер
-        alert(i18n[config.lang].thanks);
-        document.getElementById('fb-comment').value = '';
+    function closeFeedback() {
         document.getElementById('feedback-screen').style.display = 'none';
         document.getElementById('start-screen').style.display = 'flex';
         gameState = 'START';
@@ -326,11 +334,28 @@
     });
 
     const params = new URLSearchParams(window.location.search);
-    if(params.get('g')) document.body.classList.add('play-only');
-    
-    document.getElementById('list-questions').value = "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.\nThey ___ (be) happy.";
-    document.getElementById('list-correct').value = "went\nate\nwere";
-    document.getElementById('list-wrong').value = "goed, gone\neated, aten\nwas, been";
+    const gParam = params.get('g');
+    if(gParam) {
+        document.body.classList.add('play-only');
+        try {
+            const decoded = JSON.parse(decodeURIComponent(escape(atob(gParam))));
+            document.getElementById('edit-title').value = decoded.t;
+            document.getElementById('edit-desc').value = decoded.d;
+            document.getElementById('edit-bg').value = decoded.b;
+            document.getElementById('edit-lang').value = decoded.l;
+            document.getElementById('edit-font').value = decoded.f;
+            document.getElementById('edit-size').value = decoded.s;
+            document.getElementById('edit-fb-title').value = decoded.fbt || "Молодец!";
+            document.getElementById('edit-fb-text').value = decoded.fbx || "Ты отлично справился!";
+            document.getElementById('list-questions').value = decoded.qs;
+            document.getElementById('list-correct').value = decoded.cs;
+            document.getElementById('list-wrong').value = decoded.ws;
+        } catch(e) {}
+    } else {
+        document.getElementById('list-questions').value = "Yesterday I ___ (go) to the park.\nShe ___ (eat) a big apple.\nThey ___ (be) happy.";
+        document.getElementById('list-correct').value = "went\nate\nwere";
+        document.getElementById('list-wrong').value = "goed, gone\neated, aten\nwas, been";
+    }
     
     applyChanges();
     loop();
