@@ -142,7 +142,7 @@
             <div class="game-card">
                 <h2 id="fb-header">Молодец!</h2>
                 <p id="fb-text">Текст поддержки</p>
-                <button class="q-btn" onclick="closeFeedback()">ОТЛИЧНО!</button>
+                <button id="btn-restart" class="q-btn" onclick="closeFeedback()"></button>
             </div>
         </div>
 
@@ -156,10 +156,10 @@
     const gameZone = document.getElementById('game-zone');
 
     const i18n = {
-        ru: { wind: "Ветер", score: "Счёт", play: "ИГРАТЬ ▶️", quiz: "Вопрос!" },
-        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", quiz: "Question!" },
-        de: { wind: "Wind", score: "Ergebnis", play: "SPIELEN ▶️", quiz: "Frage!" },
-        fr: { wind: "Vent", score: "Score", play: "JOUER ▶️", quiz: "Question!" }
+        ru: { wind: "Ветер", score: "Счёт", play: "ИГРАТЬ ▶️", quiz: "Вопрос!", restart: "ИГРАТЬ СНОВА" },
+        en: { wind: "Wind", score: "Score", play: "PLAY ▶️", quiz: "Question!", restart: "PLAY AGAIN" },
+        de: { wind: "Wind", score: "Ergebnis", play: "SPIELEN ▶️", quiz: "Frage!", restart: "WIEDERHOLEN" },
+        fr: { wind: "Vent", score: "Score", play: "JOUER ▶️", quiz: "Question!", restart: "REJOUER" }
     };
 
     let config = { title: "", desc: "", bg: "", questions: [], lang: "ru", font: "'Segoe UI', sans-serif", size: 2, fbTitle: "", fbText: "" };
@@ -185,6 +185,7 @@
         document.getElementById('disp-title').innerText = config.title;
         document.getElementById('disp-desc').innerText = config.desc;
         document.getElementById('btn-play').innerText = i18n[config.lang].play;
+        document.getElementById('btn-restart').innerText = i18n[config.lang].restart;
         
         const qs = document.getElementById('list-questions').value.split('\n').filter(t => t.trim());
         const cs = document.getElementById('list-correct').value.split('\n');
